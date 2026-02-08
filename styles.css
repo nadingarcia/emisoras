@@ -569,6 +569,7 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 0.5rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.4;
@@ -907,10 +908,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 480px) {
-    .radio-grid {
-        grid-template-columns: 1fr;
-    }
-
     .stats-bar {
         font-size: 0.85rem;
     }
@@ -918,4 +915,83 @@ h1, h2, h3, h4, h5, h6 {
     .header-content {
         gap: 1rem;
     }
+
+    .radio-grid, .skeleton-grid {
+        display: grid;
+        /* Força 2 colunas com tamanho igual */
+        grid-template-columns: repeat(2, 1fr); 
+        gap: 0.75rem; /* Espaço menor entre cards no mobile */
+        padding: 1rem;
+    }
+
+    /* Ajuste do card para caber melhor em telas pequenas */
+    .radio-card {
+        padding: 0.75rem;
+        border-radius: 12px;
+    }
+
+    .radio-image-wrapper {
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .radio-name {
+        font-size: 0.85rem;
+        -webkit-line-clamp: 1; /* Limita nome a 1 linha no mobile */
+        line-clamp: 1;
+    }
+}
+
+/* ESTILO PARA A NOVA NUVEM DE TAGS (Adicione isso no final do CSS ou antes do Responsive) */
+.tags-section {
+    padding: 0 0 1.5rem 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tags-scroll-wrapper {
+    display: flex;
+    gap: 0.75rem;
+    padding-bottom: 0.5rem; /* Espaço para scrollbar */
+}
+
+/* Esconder scrollbar mas manter funcionalidade */
+.tags-scroll-wrapper::-webkit-scrollbar {
+    height: 4px;
+}
+.tags-scroll-wrapper::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.tag-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    padding: 0.6rem 1.2rem;
+    border-radius: 50px; /* Formato de pílula */
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tag-card i {
+    color: var(--accent-color);
+    font-size: 0.8rem;
+}
+
+.tag-card:hover, .tag-card.active {
+    background: var(--accent-color);
+    color: var(--primary-color);
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+}
+
+.tag-card.active i {
+    color: var(--primary-color);
 }

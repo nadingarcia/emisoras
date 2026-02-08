@@ -28,6 +28,8 @@ const state = {
     isOnline: navigator.onLine
 };
 
+const DEFAULT_ARTWORK = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23334155' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='40' text-anchor='middle' dy='.3em' fill='%2364748b'%3E♫%3C/text%3E%3C/svg%3E";
+
 // ==================== DOM ELEMENTS ====================
 const elements = {
     searchInput: document.getElementById('searchInput'),
@@ -51,7 +53,7 @@ const elements = {
 };
 
 // ==================== API CONFIGURATION ====================
-const API_BASE = 'https://de2.api.radio-browser.info/json';
+const API_BASE = 'https://de1.api.radio-browser.info/json';
 
 // ==================== FAVORITES SYSTEM ====================
 const Favorites = {
@@ -184,37 +186,32 @@ async function fetchStations(endpoint, resetPagination = true) {
         
         const response = await fetch(`${API_BASE}${endpoint}`, {
             method: 'GET',
-            headers: {
-                'User-Agent': 'RadioWave/2.0'
-            }
+            headers: { 'User-Agent': 'RadioWave/2.0' }
         });
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
         const data = await response.json();
         
-        // Filter valid stations
+        // FILTRAGEM E ORDENAÇÃO APRIMORADA
         const validStations = data.filter(station => 
             station.url_resolved && 
             station.url_resolved.trim() !== '' &&
-            station.lastcheckok === 1
-        );
+            station.lastcheckok === 1 &&
+            station.ssl_error === 0 // Filtra apenas estações seguras/sem erro de SSL
+        ).sort((a, b) => {
+            // Ordena por popularidade (clickcount) do maior para o menor
+            return (b.clickcount || 0) - (a.clickcount || 0);
+        });
         
         state.allStations = validStations;
-        
-        // --- CORREÇÃO AQUI ---
-        // Força o reset do noMoreData novamente, pois o IntersectionObserver 
-        // pode ter setado como true enquanto o fetch estava acontecendo.
         state.noMoreData = false; 
         
-        // Load first page
         loadNextPage(true);
         
     } catch (error) {
         console.error('Error fetching stations:', error);
-        showToast({ message: 'Erro ao carregar emissoras. Tentando cache offline...', type: 'error' });
+        showToast({ message: 'Erro ao carregar. Tentando cache...', type: 'error' });
         showError();
     } finally {
         hideLoading();
@@ -587,19 +584,37 @@ function togglePlayPause() {
 function updatePlayerUI(station) {
     elements.playerTitle.textContent = station.name;
     
+    // Tratamento de legendas
     const subtitleParts = [];
     if (station.country) subtitleParts.push(station.country);
-    if (station.state) subtitleParts.push(station.state);
+    
+    // Mostra tags no player se disponível (melhora a info)
+    if (station.tags) {
+        const mainTag = station.tags.split(',')[0];
+        if(mainTag) subtitleParts.push(mainTag);
+    }
     
     const flagHtml = station.countrycode ? createFlagElement(station.countrycode, station.country) : '<i class="fas fa-globe"></i>';
     
     elements.playerSubtitle.innerHTML = `
         ${flagHtml}
-        <span>${subtitleParts.join(', ') || 'Tocando agora'}</span>
+        <span>${subtitleParts.join(' • ') || 'Tocando agora'}</span>
     `;
 
-    if (station.favicon) {
-        elements.playerArtwork.src = station.favicon;
+    // LÓGICA DE IMAGEM DO PLAYER CORRIGIDA
+    const artwork = elements.playerArtwork;
+    
+    // Define o handler de erro ANTES de definir o src para pegar erros imediatos
+    artwork.onerror = () => {
+        artwork.src = DEFAULT_ARTWORK;
+        artwork.classList.add('fallback');
+    };
+
+    // Tenta carregar o favicon, se for vazio ou der erro, o onerror assume
+    if (station.favicon && station.favicon.trim() !== '') {
+        artwork.src = station.favicon;
+    } else {
+        artwork.src = DEFAULT_ARTWORK;
     }
 
     updatePlayPauseButton();
@@ -848,29 +863,65 @@ function registerServiceWorker() {
     }
 }
 
+// ==================== TAG NAVIGATION ====================
+const POPULAR_TAGS = [
+    { name: 'pop', icon: 'fa-music' },
+    { name: 'rock', icon: 'fa-guitar' },
+    { name: 'jazz', icon: 'fa-saxophone' },
+    { name: 'news', icon: 'fa-newspaper' },
+    { name: 'classical', icon: 'fa-violin' },
+    { name: 'electronic', icon: 'fa-bolt' },
+    { name: 'dance', icon: 'fa-child' },
+    { name: '80s', icon: 'fa-history' },
+    { name: 'talk', icon: 'fa-microphone' }
+];
+
+function renderTags() {
+    const container = document.getElementById('tagCloud');
+    if (!container) return;
+
+    container.innerHTML = POPULAR_TAGS.map(tag => `
+        <button class="tag-card" onclick="handleTagClick('${tag.name}', this)">
+            <i class="fas ${tag.icon}"></i>
+            ${tag.name}
+        </button>
+    `).join('');
+}
+
+window.handleTagClick = async (tagName, element) => {
+    // Remove active class de todos
+    document.querySelectorAll('.tag-card').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    
+    // Ativa o atual
+    if(element) element.classList.add('active');
+    
+    // Limpa busca
+    elements.searchInput.value = '';
+    state.currentFilter = `tag:${tagName}`;
+    
+    // Busca na API por tag (endpoint correto do radio-browser)
+    const endpoint = `/stations/bytag/${encodeURIComponent(tagName)}`;
+    await fetchStations(endpoint);
+    
+    showToast({ message: `Gênero: ${tagName}`, type: 'success' });
+};
+
 // ==================== INITIALIZATION ====================
 function init() {
-    // Set initial volume
     elements.audioPlayer.volume = 0.7;
-    
-    // Update favorites badge
     Favorites.updateBadge();
-    
-    // Setup event listeners
     setupEventListeners();
-    
-    // Setup infinite scroll
     setupInfiniteScroll();
-    
-    // Register Service Worker
     registerServiceWorker();
     
-    // Check online status
+    // Renderiza as tags
+    renderTags();
+    
     if (!state.isOnline) {
         elements.offlineIndicator.classList.remove('hidden');
     }
     
-    // Load popular stations by default
     loadStationsByFilter('popular');
     
     // Welcome toast
