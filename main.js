@@ -9,8 +9,10 @@
  * - Service Worker integration
  * - Country flags with fallback
  * - Offline support
+ * - URL Parameters support
+ * - Clickable tags and countries
  * 
- * Version: 2.0.0
+ * Version: 2.1.0
  */
 
 // ==================== STATE MANAGEMENT ====================
@@ -20,6 +22,7 @@ const state = {
     currentStation: null,
     isPlaying: false,
     currentFilter: 'popular',
+    currentTag: null, // Track active tag
     searchQuery: '',
     page: 0,
     pageSize: 20,
@@ -54,6 +57,29 @@ const elements = {
 
 // ==================== API CONFIGURATION ====================
 const API_BASE = 'https://de1.api.radio-browser.info/json';
+
+// ==================== URL PARAMETERS ====================
+function getUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+        filter: params.get('filter'),
+        search: params.get('s') || params.get('search'),
+        tag: params.get('tag')
+    };
+}
+
+function updateUrlParams(filter, search = '', tag = '') {
+    const params = new URLSearchParams();
+    
+    if (filter && filter !== 'popular') params.set('filter', filter);
+    if (search) params.set('s', search);
+    if (tag) params.set('tag', tag);
+    
+    const queryString = params.toString();
+    const newUrl = queryString ? `?${queryString}` : window.location.pathname;
+    
+    window.history.replaceState({}, '', newUrl);
+}
 
 // ==================== FAVORITES SYSTEM ====================
 const Favorites = {
@@ -258,10 +284,15 @@ async function searchStations(query) {
     
     const endpoint = `/stations/byname/${encodeURIComponent(query)}`;
     await fetchStations(endpoint);
+    updateUrlParams(state.currentFilter, query, state.currentTag);
 }
 
 function loadStationsByFilter(filter) {
     let endpoint;
+    
+    // Clear tag state when switching filters
+    state.currentTag = null;
+    clearTagActive();
     
     switch(filter) {
         case 'popular':
@@ -269,12 +300,15 @@ function loadStationsByFilter(filter) {
             break;
         case 'favorites':
             showFavorites();
+            updateUrlParams('favorites');
             return;
         default:
             endpoint = `/stations/bycountrycodeexact/${filter}`;
     }
     
+    state.currentFilter = filter;
     fetchStations(endpoint);
+    updateUrlParams(filter);
 }
 
 function showFavorites() {
@@ -282,6 +316,7 @@ function showFavorites() {
     state.allStations = favorites;
     state.page = 0;
     state.noMoreData = false;
+    state.currentFilter = 'favorites';
     
     hideLoading();
     
@@ -372,10 +407,12 @@ function createStationCard(station) {
         <div class="radio-info">
             <h3 class="radio-name">${escapeHtml(station.name)}</h3>
             <div class="radio-meta">
-                <div class="radio-meta-item">
-                    ${createFlagElement(station.countrycode, station.country)}
-                    <span>${escapeHtml(station.country || 'Unknown')}</span>
-                </div>
+                ${station.countrycode ? `
+                    <div class="radio-meta-item clickable-meta" data-country="${station.countrycode}" title="Filtrar por ${escapeHtml(station.country)}">
+                        ${createFlagElement(station.countrycode, station.country)}
+                        <span>${escapeHtml(station.country || 'Unknown')}</span>
+                    </div>
+                ` : ''}
                 ${station.codec ? `
                     <div class="radio-meta-item">
                         <i class="fas fa-music"></i>
@@ -385,7 +422,7 @@ function createStationCard(station) {
             </div>
             ${tags.length > 0 ? `
                 <div class="radio-tags">
-                    ${tags.map(tag => `<span class="tag">${escapeHtml(tag.trim())}</span>`).join('')}
+                    ${tags.map(tag => `<span class="tag clickable-tag" data-tag="${escapeHtml(tag.trim())}" title="Filtrar por ${escapeHtml(tag.trim())}">${escapeHtml(tag.trim())}</span>`).join('')}
                 </div>
             ` : ''}
         </div>
@@ -464,9 +501,29 @@ function attachCardListeners() {
             });
         }
 
-        // Play handler - only on card, not like button
+        // Clickable country meta
+        const countryMeta = card.querySelector('.clickable-meta[data-country]');
+        if (countryMeta) {
+            countryMeta.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const countryCode = countryMeta.getAttribute('data-country');
+                filterByCountry(countryCode);
+            });
+        }
+
+        // Clickable tags
+        const tagElements = card.querySelectorAll('.clickable-tag');
+        tagElements.forEach(tagEl => {
+            tagEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const tagName = tagEl.getAttribute('data-tag');
+                handleTagClick(tagName, null);
+            });
+        });
+
+        // Play handler - only on card, not like button or clickable elements
         const playHandler = (e) => {
-            if (e.target.closest('.like-btn')) return;
+            if (e.target.closest('.like-btn, .clickable-meta, .clickable-tag')) return;
             playStation(station, card);
         };
 
@@ -480,6 +537,24 @@ function attachCardListeners() {
             }
         });
     });
+}
+
+function filterByCountry(countryCode) {
+    // Clear search
+    elements.searchInput.value = '';
+    state.searchQuery = '';
+    
+    // Update filter buttons
+    const filterBtn = elements.filterButtons.querySelector(`[data-filter="${countryCode}"]`);
+    if (filterBtn) {
+        filterBtn.click();
+    } else {
+        // If button doesn't exist, load directly
+        clearAllActiveStates();
+        state.currentFilter = countryCode;
+        loadStationsByFilter(countryCode);
+        showToast({ message: `Filtrando por ${countryCode}`, type: 'info' });
+    }
 }
 
 function toggleLike(station, likeBtn) {
@@ -740,9 +815,7 @@ function setupEventListeners() {
         const filter = btn.getAttribute('data-filter');
         
         // Update active state
-        elements.filterButtons.querySelectorAll('.filter-btn').forEach(b => {
-            b.classList.remove('active');
-        });
+        clearFilterActive();
         btn.classList.add('active');
 
         // Clear search
@@ -836,6 +909,23 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function clearAllActiveStates() {
+    clearFilterActive();
+    clearTagActive();
+}
+
+function clearFilterActive() {
+    elements.filterButtons.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.remove('active');
+    });
+}
+
+function clearTagActive() {
+    document.querySelectorAll('.tag-card').forEach(btn => {
+        btn.classList.remove('active');
+    });
+}
+
 // ==================== SERVICE WORKER REGISTRATION ====================
 function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
@@ -881,7 +971,7 @@ function renderTags() {
     if (!container) return;
 
     container.innerHTML = POPULAR_TAGS.map(tag => `
-        <button class="tag-card" onclick="handleTagClick('${tag.name}', this)">
+        <button class="tag-card" data-tag="${tag.name}" onclick="handleTagClick('${tag.name}', this)">
             <i class="fas ${tag.icon}"></i>
             ${tag.name}
         </button>
@@ -889,21 +979,28 @@ function renderTags() {
 }
 
 window.handleTagClick = async (tagName, element) => {
-    // Remove active class de todos
-    document.querySelectorAll('.tag-card').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    // Clear all active states
+    clearAllActiveStates();
     
-    // Ativa o atual
-    if(element) element.classList.add('active');
+    // Activate clicked tag
+    if (element) {
+        element.classList.add('active');
+    } else {
+        // If called programmatically, find and activate the button
+        const tagBtn = document.querySelector(`[data-tag="${tagName}"]`);
+        if (tagBtn) tagBtn.classList.add('active');
+    }
     
-    // Limpa busca
+    // Clear search
     elements.searchInput.value = '';
-    state.currentFilter = `tag:${tagName}`;
+    state.currentFilter = 'tag';
+    state.currentTag = tagName;
     
-    // Busca na API por tag (endpoint correto do radio-browser)
+    // Fetch stations by tag
     const endpoint = `/stations/bytag/${encodeURIComponent(tagName)}`;
     await fetchStations(endpoint);
     
+    updateUrlParams('tag', '', tagName);
     showToast({ message: `Gênero: ${tagName}`, type: 'success' });
 };
 
@@ -922,7 +1019,32 @@ function init() {
         elements.offlineIndicator.classList.remove('hidden');
     }
     
-    loadStationsByFilter('popular');
+    // Read URL parameters
+    const urlParams = getUrlParams();
+    
+    if (urlParams.search) {
+        elements.searchInput.value = urlParams.search;
+        state.searchQuery = urlParams.search;
+        searchStations(urlParams.search);
+    } else if (urlParams.tag) {
+        // Activate tag from URL
+        const tagBtn = document.querySelector(`[data-tag="${urlParams.tag}"]`);
+        if (tagBtn) {
+            handleTagClick(urlParams.tag, tagBtn);
+        } else {
+            loadStationsByFilter('popular');
+        }
+    } else if (urlParams.filter) {
+        // Activate filter from URL
+        const filterBtn = elements.filterButtons.querySelector(`[data-filter="${urlParams.filter}"]`);
+        if (filterBtn) {
+            filterBtn.click();
+        } else {
+            loadStationsByFilter('popular');
+        }
+    } else {
+        loadStationsByFilter('popular');
+    }
     
     // Welcome toast
     setTimeout(() => {
