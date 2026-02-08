@@ -27,6 +27,11 @@
     box-sizing: border-box;
 }
 
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+
 body {
     font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--primary-color);
@@ -236,7 +241,9 @@ h1, h2, h3, h4, h5, h6 {
 .filter-buttons {
     display: flex;
     gap: 0.75rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .filter-btn {
@@ -253,6 +260,8 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    box-sizing: border-box;
+     flex-shrink: 0;
 }
 
 .filter-btn:hover {
@@ -945,6 +954,10 @@ h1, h2, h3, h4, h5, h6 {
         white-space: nowrap;     /* não quebra linha */
         overflow: hidden;        /* esconde o excesso */
         text-overflow: ellipsis; /* adiciona ... */
+    }
+
+    .controls-section {
+        padding: 1.5rem;
     }
 
 }
