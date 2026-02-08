@@ -107,6 +107,17 @@
                 >
             </div>
 
+            <!-- Active Filter Banner -->
+            <div id="activeFilterBanner" class="active-filter-banner hidden">
+                <div class="filter-info">
+                    <span id="filterName"></span>
+                </div>
+                <button id="clearFilterBtn" class="clear-filter-btn" aria-label="Limpar filtro">
+                    <i class="fas fa-times"></i>
+                    Limpar
+                </button>
+            </div>
+
             <!-- Filters -->
             <div class="filter-buttons" id="filterButtons">
                 <button class="filter-btn active" data-filter="popular" aria-label="Emissoras populares">
@@ -115,21 +126,7 @@
                 <button class="filter-btn" data-filter="favorites" aria-label="Minhas emissoras favoritas">
                     <i class="fas fa-heart"></i> Curtidas
                 </button>
-                <button class="filter-btn" data-filter="BR" aria-label="Emissoras do Brasil">
-                    <img src="https://flagcdn.com/24x18/br.png" alt="Brasil" class="country-flag"> Brasil
-                </button>
-                <button class="filter-btn" data-filter="US" aria-label="Emissoras dos Estados Unidos">
-                    <img src="https://flagcdn.com/24x18/us.png" alt="Estados Unidos" class="country-flag"> Estados Unidos
-                </button>
-                <button class="filter-btn" data-filter="GB" aria-label="Emissoras do Reino Unido">
-                    <img src="https://flagcdn.com/24x18/gb.png" alt="Reino Unido" class="country-flag"> Reino Unido
-                </button>
-                <button class="filter-btn" data-filter="FR" aria-label="Emissoras da França">
-                    <img src="https://flagcdn.com/24x18/fr.png" alt="França" class="country-flag"> França
-                </button>
-                <button class="filter-btn" data-filter="ES" aria-label="Emissoras da Espanha">
-                    <img src="https://flagcdn.com/24x18/es.png" alt="Espanha" class="country-flag"> Espanha
-                </button>
+                <!-- Country filters will be rendered by JS -->
             </div>
 
             <!-- Stats -->
@@ -141,7 +138,7 @@
                 </span>
             </div>
 
-            <!-- NOVO: Área de Tags/Gêneros -->
+            <!-- Tags/Gêneros Section -->
             <div class="tags-section">
                 <div class="tags-scroll-wrapper" id="tagCloud">
                     <!-- Tags serão inseridas via JS -->

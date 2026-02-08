@@ -238,12 +238,72 @@ h1, h2, h3, h4, h5, h6 {
     pointer-events: none;
 }
 
+/* ==================== ACTIVE FILTER BANNER ==================== */
+.active-filter-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
+    border: 2px solid var(--accent-color);
+    border-radius: 12px;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.filter-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.filter-info i {
+    color: var(--accent-color);
+}
+
+.clear-filter-btn {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--error-color);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    color: var(--error-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.clear-filter-btn:hover {
+    background: var(--error-color);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* ==================== FILTER BUTTONS ==================== */
 .filter-buttons {
     display: flex;
     gap: 0.75rem;
     flex-wrap: nowrap;
-     overflow-x: auto;
+    overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    margin-bottom: 1rem;
 }
 
 .filter-btn {
@@ -261,7 +321,8 @@ h1, h2, h3, h4, h5, h6 {
     align-items: center;
     gap: 0.5rem;
     box-sizing: border-box;
-     flex-shrink: 0;
+    flex-shrink: 0;
+    position: relative;
 }
 
 .filter-btn:hover {
@@ -276,6 +337,47 @@ h1, h2, h3, h4, h5, h6 {
     border-color: var(--accent-color);
     color: var(--primary-color);
     font-weight: 600;
+}
+
+/* Country remove button */
+.country-remove-btn {
+    display: flex !important;
+    position: absolute;
+    top: 0;
+    right: -6px;
+    width: 20px;
+    height: 20px;
+    background: var(--error-color);
+    border: 2px solid var(--primary-color);
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    transition: all 0.3s ease;
+    z-index: 2;
+}
+
+.country-filter-btn:hover .country-remove-btn {
+    display: flex;
+}
+
+.country-remove-btn:hover {
+    background: #DC2626;
+    transform: scale(1.1);
+}
+
+.add-country-btn {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: var(--info-color);
+    color: var(--info-color);
+}
+
+.add-country-btn:hover {
+    background: var(--info-color);
+    color: white;
 }
 
 .country-flag {
@@ -307,6 +409,109 @@ h1, h2, h3, h4, h5, h6 {
     gap: 0.5rem;
     color: var(--warning-color);
     font-weight: 600;
+}
+
+/* ==================== TAGS SECTION ==================== */
+.tags-section {
+    padding: 0 0 1.5rem 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tags-scroll-wrapper {
+    display: flex;
+    gap: 0.75rem;
+    padding-bottom: 0.5rem;
+}
+
+.tags-scroll-wrapper::-webkit-scrollbar {
+    height: 4px;
+}
+.tags-scroll-wrapper::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.tag-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    padding: 0.6rem 1.2rem;
+    border-radius: 50px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+}
+
+.tag-card i {
+    color: var(--accent-color);
+    font-size: 0.8rem;
+}
+
+.tag-card:hover, .tag-card.active {
+    background: var(--accent-color);
+    color: var(--primary-color);
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+}
+
+.tag-card.active i {
+    color: var(--primary-color);
+}
+
+/* Tag remove button */
+.tag-remove-btn {
+    display: flex !important;
+    position: absolute;
+    top: 0;
+    right: -6px;
+    width: 20px;
+    height: 20px;
+    background: var(--error-color);
+    border: 2px solid var(--primary-color);
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    transition: all 0.3s ease;
+    z-index: 2;
+}
+
+.tag-card:hover .tag-remove-btn {
+    display: flex;
+}
+
+.tag-remove-btn:hover {
+    background: #DC2626;
+    transform: scale(1.1);
+}
+
+.add-tag-btn {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: var(--info-color);
+    color: var(--info-color);
+}
+
+.add-tag-btn:hover {
+    background: var(--info-color);
+    color: white;
+}
+
+.add-tag-btn i {
+    color: var(--info-color);
+}
+
+.add-tag-btn:hover i {
+    color: white;
 }
 
 /* ==================== LOADING SKELETON ==================== */
@@ -596,6 +801,7 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    transition: all 0.3s ease;
 }
 
 .radio-meta-item i {
@@ -606,6 +812,35 @@ h1, h2, h3, h4, h5, h6 {
 .radio-meta-item .country-flag {
     width: 20px;
     height: 15px;
+}
+
+/* Clickable meta styling */
+.clickable-meta {
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    margin-left: -0.5rem;
+    border-radius: 6px;
+    position: relative;
+}
+
+.clickable-meta::after {
+    content: '\f0a9';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    margin-left: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    color: var(--accent-color);
+    font-size: 0.75rem;
+}
+
+.clickable-meta:hover {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--accent-color);
+}
+
+.clickable-meta:hover::after {
+    opacity: 1;
 }
 
 .radio-tags {
@@ -623,6 +858,34 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.75rem;
     color: var(--accent-color);
     font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* Clickable tag styling */
+.clickable-tag {
+    cursor: pointer;
+}
+
+.tag-click-icon {
+    font-size: 0.65rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.clickable-tag:hover {
+    background: var(--accent-color);
+    color: var(--primary-color);
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.clickable-tag:hover .tag-click-icon {
+    opacity: 1;
 }
 
 /* ==================== PLAYER ==================== */
@@ -914,6 +1177,16 @@ h1, h2, h3, h4, h5, h6 {
         height: 48px;
         font-size: 1.25rem;
     }
+
+    .active-filter-banner {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .clear-filter-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 @media (max-width: 480px) {
@@ -927,13 +1200,11 @@ h1, h2, h3, h4, h5, h6 {
 
     .radio-grid, .skeleton-grid {
         display: grid;
-        /* Força 2 colunas com tamanho igual */
         grid-template-columns: repeat(2, 1fr); 
-        gap: 0.75rem; /* Espaço menor entre cards no mobile */
+        gap: 0.75rem;
         padding: 1rem;
     }
 
-    /* Ajuste do card para caber melhor em telas pequenas */
     .radio-card {
         padding: 0.75rem;
         border-radius: 12px;
@@ -946,72 +1217,22 @@ h1, h2, h3, h4, h5, h6 {
     
     .radio-name {
         font-size: 0.85rem;
-        -webkit-line-clamp: 1; /* Limita nome a 1 linha no mobile */
+        -webkit-line-clamp: 1;
         line-clamp: 1;
     }
 
     .radio-meta-item {
-        white-space: nowrap;     /* não quebra linha */
-        overflow: hidden;        /* esconde o excesso */
-        text-overflow: ellipsis; /* adiciona ... */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .controls-section {
         padding: 1.5rem;
     }
 
-}
-
-/* ESTILO PARA A NOVA NUVEM DE TAGS (Adicione isso no final do CSS ou antes do Responsive) */
-.tags-section {
-    padding: 0 0 1.5rem 0;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-.tags-scroll-wrapper {
-    display: flex;
-    gap: 0.75rem;
-    padding-bottom: 0.5rem; /* Espaço para scrollbar */
-}
-
-/* Esconder scrollbar mas manter funcionalidade */
-.tags-scroll-wrapper::-webkit-scrollbar {
-    height: 4px;
-}
-.tags-scroll-wrapper::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border-radius: 4px;
-}
-
-.tag-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    padding: 0.6rem 1.2rem;
-    border-radius: 50px; /* Formato de pílula */
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.tag-card i {
-    color: var(--accent-color);
-    font-size: 0.8rem;
-}
-
-.tag-card:hover, .tag-card.active {
-    background: var(--accent-color);
-    color: var(--primary-color);
-    border-color: var(--accent-color);
-    transform: translateY(-2px);
-}
-
-.tag-card.active i {
-    color: var(--primary-color);
+    .tag-card {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
 }

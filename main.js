@@ -11,8 +11,10 @@
  * - Offline support
  * - URL Parameters support
  * - Clickable tags and countries
+ * - Customizable tags and filters (user can add/remove)
+ * - Media Session API integration
  * 
- * Version: 2.1.0
+ * Version: 2.2.0
  */
 
 // ==================== STATE MANAGEMENT ====================
@@ -23,12 +25,14 @@ const state = {
     isPlaying: false,
     currentFilter: 'popular',
     currentTag: null, // Track active tag
+    currentCountry: null, // Track active country filter
     searchQuery: '',
     page: 0,
     pageSize: 20,
     isFetching: false,
     noMoreData: false,
-    isOnline: navigator.onLine
+    isOnline: navigator.onLine,
+    activeFilterType: null // 'tag', 'country', 'search', 'popular', 'favorites'
 };
 
 const DEFAULT_ARTWORK = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23334155' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='40' text-anchor='middle' dy='.3em' fill='%2364748b'%3E♫%3C/text%3E%3C/svg%3E";
@@ -52,11 +56,121 @@ const elements = {
     favoritesBadge: document.getElementById('favoritesBadge'),
     favoritesBadgeBtn: document.getElementById('favoritesBadgeBtn'),
     offlineIndicator: document.getElementById('offlineIndicator'),
-    toaster: document.getElementById('toaster')
+    toaster: document.getElementById('toaster'),
+    tagCloud: document.getElementById('tagCloud'),
+    activeFilterBanner: document.getElementById('activeFilterBanner'),
+    clearFilterBtn: document.getElementById('clearFilterBtn'),
+    filterName: document.getElementById('filterName')
 };
 
 // ==================== API CONFIGURATION ====================
 const API_BASE = 'https://de1.api.radio-browser.info/json';
+
+// ==================== CUSTOM TAGS & COUNTRIES MANAGEMENT ====================
+const CustomFilters = {
+    TAGS_KEY: 'radiowave_custom_tags',
+    COUNTRIES_KEY: 'radiowave_custom_countries',
+    
+    DEFAULT_TAGS: [
+        { name: 'pop', icon: 'fa-music' },
+        { name: 'rock', icon: 'fa-guitar' },
+        { name: 'jazz', icon: 'fa-saxophone' },
+        { name: 'news', icon: 'fa-newspaper' },
+        { name: 'classical', icon: 'fa-violin' },
+        { name: 'electronic', icon: 'fa-bolt' },
+        { name: 'dance', icon: 'fa-child' },
+        { name: '80s', icon: 'fa-history' },
+        { name: 'talk', icon: 'fa-microphone' }
+    ],
+    
+    DEFAULT_COUNTRIES: [
+        { code: 'BR', name: 'Brasil' },
+        { code: 'US', name: 'Estados Unidos' },
+        { code: 'GB', name: 'Reino Unido' },
+        { code: 'FR', name: 'França' },
+        { code: 'ES', name: 'Espanha' }
+    ],
+    
+    getTags() {
+        try {
+            const tags = localStorage.getItem(this.TAGS_KEY);
+            return tags ? JSON.parse(tags) : this.DEFAULT_TAGS;
+        } catch (error) {
+            console.error('Error reading tags:', error);
+            return this.DEFAULT_TAGS;
+        }
+    },
+    
+    saveTags(tags) {
+        try {
+            localStorage.setItem(this.TAGS_KEY, JSON.stringify(tags));
+        } catch (error) {
+            console.error('Error saving tags:', error);
+        }
+    },
+    
+    addTag(tagName, icon = 'fa-music') {
+        const tags = this.getTags();
+        const exists = tags.some(t => t.name.toLowerCase() === tagName.toLowerCase());
+        
+        if (!exists) {
+            tags.push({ name: tagName, icon: icon });
+            this.saveTags(tags);
+            renderTags();
+            showToast({ message: `Tag "${tagName}" adicionada!`, type: 'success' });
+            return true;
+        }
+        return false;
+    },
+    
+    removeTag(tagName) {
+        const tags = this.getTags();
+        const filtered = tags.filter(t => t.name !== tagName);
+        this.saveTags(filtered);
+        renderTags();
+        showToast({ message: `Tag "${tagName}" removida`, type: 'info' });
+    },
+    
+    getCountries() {
+        try {
+            const countries = localStorage.getItem(this.COUNTRIES_KEY);
+            return countries ? JSON.parse(countries) : this.DEFAULT_COUNTRIES;
+        } catch (error) {
+            console.error('Error reading countries:', error);
+            return this.DEFAULT_COUNTRIES;
+        }
+    },
+    
+    saveCountries(countries) {
+        try {
+            localStorage.setItem(this.COUNTRIES_KEY, JSON.stringify(countries));
+        } catch (error) {
+            console.error('Error saving countries:', error);
+        }
+    },
+    
+    addCountry(code, name) {
+        const countries = this.getCountries();
+        const exists = countries.some(c => c.code === code);
+        
+        if (!exists) {
+            countries.push({ code, name });
+            this.saveCountries(countries);
+            renderCountryFilters();
+            showToast({ message: `País "${name}" adicionado!`, type: 'success' });
+            return true;
+        }
+        return false;
+    },
+    
+    removeCountry(code) {
+        const countries = this.getCountries();
+        const filtered = countries.filter(c => c.code !== code);
+        this.saveCountries(filtered);
+        renderCountryFilters();
+        showToast({ message: 'País removido', type: 'info' });
+    }
+};
 
 // ==================== URL PARAMETERS ====================
 function getUrlParams() {
@@ -199,6 +313,58 @@ function createFlagElement(countryCode, country) {
     return emoji;
 }
 
+// ==================== ACTIVE FILTER BANNER ====================
+function showActiveFilter(type, name) {
+    state.activeFilterType = type;
+    elements.activeFilterBanner.classList.remove('hidden');
+    
+    let icon = 'fa-filter';
+    let label = name;
+    
+    switch(type) {
+        case 'tag':
+            icon = 'fa-tag';
+            label = `Gênero: ${name}`;
+            break;
+        case 'country':
+            icon = 'fa-flag';
+            label = `País: ${name}`;
+            break;
+        case 'search':
+            icon = 'fa-search';
+            label = `Busca: "${name}"`;
+            break;
+        case 'favorites':
+            icon = 'fa-heart';
+            label = 'Favoritos';
+            break;
+    }
+    
+    elements.filterName.innerHTML = `<i class="fas ${icon}"></i> ${label}`;
+}
+
+function hideActiveFilter() {
+    state.activeFilterType = null;
+    elements.activeFilterBanner.classList.add('hidden');
+}
+
+function clearActiveFilter() {
+    hideActiveFilter();
+    state.currentTag = null;
+    state.currentCountry = null;
+    state.searchQuery = '';
+    elements.searchInput.value = '';
+    clearAllActiveStates();
+    
+    // Activate popular
+    const popularBtn = elements.filterButtons.querySelector('[data-filter="popular"]');
+    if (popularBtn) {
+        popularBtn.classList.add('active');
+    }
+    
+    loadStationsByFilter('popular');
+}
+
 // ==================== API FUNCTIONS ====================
 async function fetchStations(endpoint, resetPagination = true) {
     try {
@@ -224,9 +390,8 @@ async function fetchStations(endpoint, resetPagination = true) {
             station.url_resolved && 
             station.url_resolved.trim() !== '' &&
             station.lastcheckok === 1 &&
-            station.ssl_error === 0 // Filtra apenas estações seguras/sem erro de SSL
+            station.ssl_error === 0
         ).sort((a, b) => {
-            // Ordena por popularidade (clickcount) do maior para o menor
             return (b.clickcount || 0) - (a.clickcount || 0);
         });
         
@@ -278,13 +443,14 @@ function loadNextPage(isFirst = false) {
 
 async function searchStations(query) {
     if (!query || query.trim() === '') {
-        loadStationsByFilter(state.currentFilter);
+        clearActiveFilter();
         return;
     }
     
     const endpoint = `/stations/byname/${encodeURIComponent(query)}`;
     await fetchStations(endpoint);
     updateUrlParams(state.currentFilter, query, state.currentTag);
+    showActiveFilter('search', query);
 }
 
 function loadStationsByFilter(filter) {
@@ -292,11 +458,13 @@ function loadStationsByFilter(filter) {
     
     // Clear tag state when switching filters
     state.currentTag = null;
+    state.currentCountry = null;
     clearTagActive();
     
     switch(filter) {
         case 'popular':
             endpoint = '/stations/topclick';
+            hideActiveFilter();
             break;
         case 'favorites':
             showFavorites();
@@ -304,6 +472,11 @@ function loadStationsByFilter(filter) {
             return;
         default:
             endpoint = `/stations/bycountrycodeexact/${filter}`;
+            state.currentCountry = filter;
+            const country = CustomFilters.getCountries().find(c => c.code === filter);
+            if (country) {
+                showActiveFilter('country', country.name);
+            }
     }
     
     state.currentFilter = filter;
@@ -319,6 +492,7 @@ function showFavorites() {
     state.currentFilter = 'favorites';
     
     hideLoading();
+    showActiveFilter('favorites', '');
     
     if (favorites.length === 0) {
         showEmptyState();
@@ -391,7 +565,7 @@ function createStationCard(station) {
         <div class="radio-image-wrapper">
             <img 
                 class="radio-image loading" 
-                data-src="${station.favicon || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Crect fill=\'%23334155\' width=\'100\' height=\'100\'/%3E%3Ctext x=\'50\' y=\'50\' font-size=\'40\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%2364748b\'%3E♫%3C/text%3E%3C/svg%3E'}"
+                data-src="${station.favicon || DEFAULT_ARTWORK}"
                 alt="${escapeHtml(station.name)}"
                 loading="lazy"
             >
@@ -408,7 +582,7 @@ function createStationCard(station) {
             <h3 class="radio-name">${escapeHtml(station.name)}</h3>
             <div class="radio-meta">
                 ${station.countrycode ? `
-                    <div class="radio-meta-item clickable-meta" data-country="${station.countrycode}" title="Filtrar por ${escapeHtml(station.country)}">
+                    <div class="radio-meta-item clickable-meta" data-country="${station.countrycode}" data-country-name="${escapeHtml(station.country)}" title="Filtrar por ${escapeHtml(station.country)}">
                         ${createFlagElement(station.countrycode, station.country)}
                         <span>${escapeHtml(station.country || 'Unknown')}</span>
                     </div>
@@ -422,7 +596,10 @@ function createStationCard(station) {
             </div>
             ${tags.length > 0 ? `
                 <div class="radio-tags">
-                    ${tags.map(tag => `<span class="tag clickable-tag" data-tag="${escapeHtml(tag.trim())}" title="Filtrar por ${escapeHtml(tag.trim())}">${escapeHtml(tag.trim())}</span>`).join('')}
+                    ${tags.map(tag => `<span class="tag clickable-tag" data-tag="${escapeHtml(tag.trim())}" title="Clique para filtrar por ${escapeHtml(tag.trim())}">
+                        <i class="fas fa-hand-pointer tag-click-icon"></i>
+                        ${escapeHtml(tag.trim())}
+                    </span>`).join('')}
                 </div>
             ` : ''}
         </div>
@@ -432,7 +609,6 @@ function createStationCard(station) {
 }
 
 function showSkeletonForNextPage() {
-    // Add skeleton cards at the end
     const skeletonHTML = `
         <div class="skeleton-card next-page-skeleton">
             <div class="skeleton-image"></div>
@@ -468,7 +644,7 @@ function lazyLoadImages() {
                 });
                 
                 img.addEventListener('error', () => {
-                    img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23334155' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='40' text-anchor='middle' dy='.3em' fill='%2364748b'%3E♫%3C/text%3E%3C/svg%3E";
+                    img.src = DEFAULT_ARTWORK;
                     img.classList.remove('loading');
                 });
                 
@@ -507,7 +683,8 @@ function attachCardListeners() {
             countryMeta.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const countryCode = countryMeta.getAttribute('data-country');
-                filterByCountry(countryCode);
+                const countryName = countryMeta.getAttribute('data-country-name');
+                filterByCountry(countryCode, countryName);
             });
         }
 
@@ -539,10 +716,24 @@ function attachCardListeners() {
     });
 }
 
-function filterByCountry(countryCode) {
+function filterByCountry(countryCode, countryName) {
     // Clear search
     elements.searchInput.value = '';
     state.searchQuery = '';
+    
+    // Check if country already in custom list, if not offer to add
+    const countries = CustomFilters.getCountries();
+    const exists = countries.some(c => c.code === countryCode);
+    
+    if (!exists) {
+        // Show toast with option to add
+        showToast({ 
+            message: `Gostou de ${countryName}? A tag será adicionada automaticamente aos seus filtros.`, 
+            type: 'info',
+            duration: 5000
+        });
+        CustomFilters.addCountry(countryCode, countryName);
+    }
     
     // Update filter buttons
     const filterBtn = elements.filterButtons.querySelector(`[data-filter="${countryCode}"]`);
@@ -553,7 +744,6 @@ function filterByCountry(countryCode) {
         clearAllActiveStates();
         state.currentFilter = countryCode;
         loadStationsByFilter(countryCode);
-        showToast({ message: `Filtrando por ${countryCode}`, type: 'info' });
     }
 }
 
@@ -578,6 +768,40 @@ function toggleLike(station, likeBtn) {
         Favorites.addLike(station);
         likeBtn.classList.add('liked');
         likeBtn.setAttribute('aria-label', 'Remover dos favoritos');
+    }
+}
+
+// ==================== MEDIA SESSION API ====================
+function updateMediaSession(station) {
+    if ('mediaSession' in navigator) {
+        const artwork = station.favicon && station.favicon.trim() !== '' 
+            ? station.favicon 
+            : window.location.origin + '/icons/icon-512.png';
+        
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: station.name,
+            artist: station.country || 'RadioWave',
+            album: station.tags ? station.tags.split(',')[0] : 'Rádio Online',
+            artwork: [
+                { src: artwork, sizes: '96x96', type: 'image/png' },
+                { src: artwork, sizes: '128x128', type: 'image/png' },
+                { src: artwork, sizes: '512x512', type: 'image/png' }
+            ]
+        });
+
+        navigator.mediaSession.setActionHandler('play', () => {
+            if (state.currentStation) {
+                elements.audioPlayer.play();
+            }
+        });
+
+        navigator.mediaSession.setActionHandler('pause', () => {
+            elements.audioPlayer.pause();
+        });
+
+        // These don't work for live streams but we set them anyway
+        navigator.mediaSession.setActionHandler('previoustrack', null);
+        navigator.mediaSession.setActionHandler('nexttrack', null);
     }
 }
 
@@ -616,6 +840,7 @@ async function playStation(station, card) {
         await elements.audioPlayer.play();
         state.isPlaying = true;
         updatePlayerUI(station);
+        updateMediaSession(station);
         updateCardStates();
         elements.playPauseBtn.disabled = false;
         
@@ -793,6 +1018,208 @@ function setupInfiniteScroll() {
     sentinelObserver.observe(elements.scrollSentinel);
 }
 
+// ==================== TAG NAVIGATION ====================
+function renderTags() {
+    const container = elements.tagCloud;
+    if (!container) return;
+
+    const tags = CustomFilters.getTags();
+    
+    container.innerHTML = tags.map(tag => `
+        <button class="tag-card" data-tag="${tag.name}">
+            <i class="fas ${tag.icon}"></i>
+            <span class="tag-name">${tag.name}</span>
+            <span class="tag-remove-btn" data-tag="${tag.name}" title="Remover tag" aria-label="Remover tag ${tag.name}">
+                <i class="fas fa-times"></i>
+            </span>
+        </button>
+    `).join('') + `
+        <button class="tag-card add-tag-btn" title="Adicionar nova tag">
+            <i class="fas fa-plus"></i>
+            <span class="tag-name">Adicionar</span>
+        </button>
+    `;
+    
+    // Attach listeners
+    attachTagListeners();
+}
+
+function attachTagListeners() {
+    // Tag click handlers
+    const tagCards = document.querySelectorAll('.tag-card[data-tag]');
+    tagCards.forEach(card => {
+        const tagName = card.getAttribute('data-tag');
+        
+        card.addEventListener('click', (e) => {
+            // Ignore if clicking remove button
+            if (e.target.closest('.tag-remove-btn')) return;
+            handleTagClick(tagName, card);
+        });
+    });
+    
+    // Remove button handlers
+    const removeButtons = document.querySelectorAll('.tag-remove-btn');
+    removeButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const tagName = btn.getAttribute('data-tag');
+            
+            if (confirm(`Remover a tag "${tagName}"?`)) {
+                CustomFilters.removeTag(tagName);
+                
+                // If currently filtered by this tag, clear filter
+                if (state.currentTag === tagName) {
+                    clearActiveFilter();
+                }
+            }
+        });
+    });
+    
+    // Add tag button
+    const addBtn = document.querySelector('.add-tag-btn');
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            const tagName = prompt('Digite o nome da nova tag (gênero musical):');
+            if (tagName && tagName.trim()) {
+                const added = CustomFilters.addTag(tagName.trim().toLowerCase());
+                if (!added) {
+                    showToast({ message: 'Esta tag já existe!', type: 'warning' });
+                }
+            }
+        });
+    }
+}
+
+window.handleTagClick = async (tagName, element) => {
+    // Clear all active states
+    clearAllActiveStates();
+    
+    // Activate clicked tag
+    if (element) {
+        element.classList.add('active');
+    } else {
+        // If called programmatically, find and activate the button
+        const tagBtn = document.querySelector(`[data-tag="${tagName}"]`);
+        if (tagBtn) tagBtn.classList.add('active');
+    }
+    
+    // Clear search
+    elements.searchInput.value = '';
+    state.currentFilter = 'tag';
+    state.currentTag = tagName;
+    
+    // Fetch stations by tag
+    const endpoint = `/stations/bytag/${encodeURIComponent(tagName)}`;
+    await fetchStations(endpoint);
+    
+    updateUrlParams('tag', '', tagName);
+    showActiveFilter('tag', tagName);
+};
+
+// ==================== COUNTRY FILTERS RENDERING ====================
+function renderCountryFilters() {
+    const container = elements.filterButtons;
+    if (!container) return;
+    
+    const countries = CustomFilters.getCountries();
+    
+    // Keep popular and favorites buttons
+    const fixedButtons = `
+        <button class="filter-btn active" data-filter="popular" aria-label="Emissoras populares">
+            <i class="fas fa-fire"></i> Populares
+        </button>
+        <button class="filter-btn" data-filter="favorites" aria-label="Minhas emissoras favoritas">
+            <i class="fas fa-heart"></i> Curtidas
+        </button>
+    `;
+    
+    const countryButtons = countries.map(country => `
+        <button class="filter-btn country-filter-btn" data-filter="${country.code}" aria-label="Emissoras de ${country.name}">
+            <img src="https://flagcdn.com/24x18/${country.code.toLowerCase()}.png" alt="${country.name}" class="country-flag"> 
+            ${country.name}
+            <span class="country-remove-btn" data-country="${country.code}" title="Remover" aria-label="Remover ${country.name}">
+                <i class="fas fa-times"></i>
+            </span>
+        </button>
+    `).join('');
+    
+    const addButton = `
+        <button class="filter-btn add-country-btn" title="Adicionar país">
+            <i class="fas fa-plus"></i> Adicionar
+        </button>
+    `;
+    
+    container.innerHTML = fixedButtons + countryButtons + addButton;
+    
+    // Reattach filter listeners
+    attachFilterListeners();
+}
+
+function attachFilterListeners() {
+    // Filter button clicks
+    const filterBtns = elements.filterButtons.querySelectorAll('.filter-btn:not(.add-country-btn)');
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // Ignore if clicking remove button
+            if (e.target.closest('.country-remove-btn')) return;
+            
+            const filter = btn.getAttribute('data-filter');
+            
+            // Update active state
+            clearFilterActive();
+            btn.classList.add('active');
+
+            // Clear search
+            elements.searchInput.value = '';
+            state.searchQuery = '';
+
+            // Update state and load
+            state.currentFilter = filter;
+            loadStationsByFilter(filter);
+        });
+    });
+    
+    // Remove country buttons
+    const removeButtons = elements.filterButtons.querySelectorAll('.country-remove-btn');
+    removeButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const countryCode = btn.getAttribute('data-country');
+            const country = CustomFilters.getCountries().find(c => c.code === countryCode);
+            
+            if (country && confirm(`Remover "${country.name}" dos filtros?`)) {
+                CustomFilters.removeCountry(countryCode);
+                
+                // If currently filtered by this country, clear filter
+                if (state.currentCountry === countryCode) {
+                    clearActiveFilter();
+                }
+            }
+        });
+    });
+    
+    // Add country button
+    const addBtn = elements.filterButtons.querySelector('.add-country-btn');
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            const countryCode = prompt('Digite o código do país (2 letras, ex: BR, US, DE):');
+            if (countryCode && countryCode.trim().length === 2) {
+                const code = countryCode.trim().toUpperCase();
+                const name = prompt(`Digite o nome do país para ${code}:`);
+                
+                if (name && name.trim()) {
+                    const added = CustomFilters.addCountry(code, name.trim());
+                    if (!added) {
+                        showToast({ message: 'Este país já existe!', type: 'warning' });
+                    }
+                }
+            } else {
+                showToast({ message: 'Código inválido! Use 2 letras (ex: BR)', type: 'error' });
+            }
+        });
+    }
+}
+
 // ==================== EVENT LISTENERS ====================
 function setupEventListeners() {
     // Search with debounce
@@ -807,32 +1234,15 @@ function setupEventListeners() {
         }, 500);
     });
 
-    // Filter buttons
-    elements.filterButtons.addEventListener('click', (e) => {
-        const btn = e.target.closest('.filter-btn');
-        if (!btn) return;
-
-        const filter = btn.getAttribute('data-filter');
-        
-        // Update active state
-        clearFilterActive();
-        btn.classList.add('active');
-
-        // Clear search
-        elements.searchInput.value = '';
-        state.searchQuery = '';
-
-        // Update state and load
-        state.currentFilter = filter;
-        loadStationsByFilter(filter);
-    });
-
     // Favorites badge button
     elements.favoritesBadgeBtn.addEventListener('click', () => {
         // Trigger favorites filter
         const favBtn = elements.filterButtons.querySelector('[data-filter="favorites"]');
         if (favBtn) favBtn.click();
     });
+    
+    // Clear filter button
+    elements.clearFilterBtn.addEventListener('click', clearActiveFilter);
 
     // Play/Pause button
     elements.playPauseBtn.addEventListener('click', togglePlayPause);
@@ -953,57 +1363,6 @@ function registerServiceWorker() {
     }
 }
 
-// ==================== TAG NAVIGATION ====================
-const POPULAR_TAGS = [
-    { name: 'pop', icon: 'fa-music' },
-    { name: 'rock', icon: 'fa-guitar' },
-    { name: 'jazz', icon: 'fa-saxophone' },
-    { name: 'news', icon: 'fa-newspaper' },
-    { name: 'classical', icon: 'fa-violin' },
-    { name: 'electronic', icon: 'fa-bolt' },
-    { name: 'dance', icon: 'fa-child' },
-    { name: '80s', icon: 'fa-history' },
-    { name: 'talk', icon: 'fa-microphone' }
-];
-
-function renderTags() {
-    const container = document.getElementById('tagCloud');
-    if (!container) return;
-
-    container.innerHTML = POPULAR_TAGS.map(tag => `
-        <button class="tag-card" data-tag="${tag.name}" onclick="handleTagClick('${tag.name}', this)">
-            <i class="fas ${tag.icon}"></i>
-            ${tag.name}
-        </button>
-    `).join('');
-}
-
-window.handleTagClick = async (tagName, element) => {
-    // Clear all active states
-    clearAllActiveStates();
-    
-    // Activate clicked tag
-    if (element) {
-        element.classList.add('active');
-    } else {
-        // If called programmatically, find and activate the button
-        const tagBtn = document.querySelector(`[data-tag="${tagName}"]`);
-        if (tagBtn) tagBtn.classList.add('active');
-    }
-    
-    // Clear search
-    elements.searchInput.value = '';
-    state.currentFilter = 'tag';
-    state.currentTag = tagName;
-    
-    // Fetch stations by tag
-    const endpoint = `/stations/bytag/${encodeURIComponent(tagName)}`;
-    await fetchStations(endpoint);
-    
-    updateUrlParams('tag', '', tagName);
-    showToast({ message: `Gênero: ${tagName}`, type: 'success' });
-};
-
 // ==================== INITIALIZATION ====================
 function init() {
     elements.audioPlayer.volume = 0.7;
@@ -1012,8 +1371,9 @@ function init() {
     setupInfiniteScroll();
     registerServiceWorker();
     
-    // Renderiza as tags
+    // Renderiza as tags e países customizáveis
     renderTags();
+    renderCountryFilters();
     
     if (!state.isOnline) {
         elements.offlineIndicator.classList.remove('hidden');
