@@ -1,0 +1,81 @@
+{
+  "name": "RadioWave - Rádios do Mundo",
+  "short_name": "RadioWave",
+  "description": "Descubra e ouça milhares de rádios do mundo inteiro gratuitamente",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0F172A",
+  "background_color": "#0F172A",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "id": "/",
+  "categories": ["entertainment", "music", "news"],
+  "icons": [
+    {
+      "src": "/icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/screenshot-mobile.png",
+      "sizes": "402x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshots/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Favoritos",
+      "short_name": "Favoritos",
+      "description": "Ver emissoras favoritas",
+      "url": "/?filter=favorites",
+      "icons": [
+        {
+          "src": "/icons/heart-icon.jpg",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Populares",
+      "short_name": "Populares",
+      "description": "Ver emissoras populares",
+      "url": "/?filter=popular",
+      "icons": [
+        {
+          "src": "/icons/fire-icon.jpeg",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}
