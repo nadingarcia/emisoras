@@ -940,6 +940,13 @@ h1, h2, h3, h4, h5, h6 {
         -webkit-line-clamp: 1; /* Limita nome a 1 linha no mobile */
         line-clamp: 1;
     }
+
+    .radio-meta-item {
+        white-space: nowrap;     /* não quebra linha */
+        overflow: hidden;        /* esconde o excesso */
+        text-overflow: ellipsis; /* adiciona ... */
+    }
+
 }
 
 /* ESTILO PARA A NOVA NUVEM DE TAGS (Adicione isso no final do CSS ou antes do Responsive) */
