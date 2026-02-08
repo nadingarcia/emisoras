@@ -9,7 +9,7 @@
  * Version: 2.0.0
  */
 
-const CACHE_VERSION = 'v1.1.0';
+const CACHE_VERSION = 'v1.1.1';
 const STATIC_CACHE = `radiowave-static-${CACHE_VERSION}`;
 const IMAGES_CACHE = `radiowave-images-${CACHE_VERSION}`;
 const API_CACHE = `radiowave-api-${CACHE_VERSION}`;
