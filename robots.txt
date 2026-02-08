@@ -8,7 +8,7 @@ Disallow: /service-worker.js
 Disallow: /manifest.json
 
 # Sitemap
-Sitemap: https://emisora.vercel.app/sitemap.xml
+Sitemap: https://emisoras.vercel.app/sitemap.xml
 
 # Crawl-delay (optional, adjust as needed)
 Crawl-delay: 1
