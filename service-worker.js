@@ -2,44 +2,19 @@
  * RadioWave Service Worker - Versão Final v3.0.0
  * 
  * Estratégias Unificadas:
- * 1. Assets Estáticos: Cache First (Rápido para o App Shell)
  * 2. API: Stale-While-Revalidate (Instantâneo + Atualização em Background)
  * 3. Imagens: Cache First Híbrido (Suporta CORS e Opaque Responses para logotipos externos)
  * 
  * Version: 3.0.0
  */
 
-const CACHE_VERSION = 'v3.1.2';
-const STATIC_CACHE = `radiowave-static-${CACHE_VERSION}`;
+const CACHE_VERSION = 'v1.1.0';
 const IMAGES_CACHE = `radiowave-images-${CACHE_VERSION}`;
 const API_CACHE = `radiowave-api-${CACHE_VERSION}`;
-
-// Assets essenciais para o App funcionar offline
-const STATIC_ASSETS = [
-    '/',
-    '/index.html',
-    '/styles.css',
-    '/main.js',
-    '/manifest.json',
-    'https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css',
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
-    'https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=DM+Sans:wght@400;500;700&display=swap'
-];
 
 // Configurações
 const IMAGES_MAX_ENTRIES = 200; // Máximo de imagens salvas
 const IMAGES_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 dias
-const API_MAX_AGE = 24 * 60 * 60 * 1000; // 24 horas
-
-// ==================== INSTALAÇÃO ====================
-self.addEventListener('install', (event) => {
-    console.log('[SW] Instalando v3.0.0...');
-    event.waitUntil(
-        caches.open(STATIC_CACHE)
-            .then(cache => cache.addAll(STATIC_ASSETS))
-            .then(() => self.skipWaiting())
-    );
-});
 
 // ==================== ATIVAÇÃO ====================
 self.addEventListener('activate', (event) => {
@@ -49,7 +24,6 @@ self.addEventListener('activate', (event) => {
             return Promise.all(
                 cacheNames.map(cacheName => {
                     if (cacheName.startsWith('radiowave-') && 
-                        cacheName !== STATIC_CACHE && 
                         cacheName !== IMAGES_CACHE && 
                         cacheName !== API_CACHE) {
                         return caches.delete(cacheName);
@@ -68,12 +42,6 @@ self.addEventListener('fetch', (event) => {
     // Ignora requisições que não sejam GET (POST, PUT, etc.)
     if (request.method !== 'GET') return;
 
-    // 1. Assets Estáticos (CSS, JS, HTML Local)
-    if (isStaticAsset(url)) {
-        event.respondWith(cacheFirst(request, STATIC_CACHE));
-        return;
-    }
-
     // 2. Imagens (Logos, Ícones, Favicons)
     if (isImage(request)) {
         event.respondWith(imageStrategy(request));
@@ -87,7 +55,7 @@ self.addEventListener('fetch', (event) => {
     }
 
     // 4. Fallback para rede (qualquer outra coisa)
-    event.respondWith(networkFirst(request, STATIC_CACHE));
+    event.respondWith(fetch(request));
 });
 
 // ==================== ESTRATÉGIAS ====================
@@ -211,52 +179,6 @@ async function apiStrategy(request) {
     });
 }
 
-/**
- * Estratégia Padrão (Cache First simples)
- */
-async function cacheFirst(request, cacheName) {
-    const cache = await caches.open(cacheName);
-    const cached = await cache.match(request);
-    if (cached) return cached;
-
-    try {
-        const response = await fetch(request);
-        if (response.status === 200) {
-            cache.put(request, response.clone());
-        }
-        return response;
-    } catch (error) {
-        // Página offline se for HTML
-        if (request.headers.get('accept').includes('text/html')) {
-            return new Response(getOfflinePage(), { headers: { 'Content-Type': 'text/html' } });
-        }
-        throw error;
-    }
-}
-
-async function networkFirst(request, cacheName) {
-    try {
-        const response = await fetch(request);
-        const cache = await caches.open(cacheName);
-        cache.put(request, response.clone());
-        return response;
-    } catch (error) {
-        const cache = await caches.open(cacheName);
-        return await cache.match(request);
-    }
-}
-
-// ==================== HELPERS ====================
-
-function isStaticAsset(url) {
-    return url.origin === self.location.origin && (
-        url.pathname.endsWith('.html') ||
-        url.pathname.endsWith('.css') ||
-        url.pathname.endsWith('.js') ||
-        url.pathname === '/'
-    );
-}
-
 function isImage(request) {
     const url = request.url;
     return request.destination === 'image' || 
@@ -281,18 +203,4 @@ async function trimCache(cacheName, maxEntries) {
             keys.slice(0, keys.length - maxEntries).map(key => cache.delete(key))
         );
     }
-}
-
-function getOfflinePage() {
-    return `
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head><title>Offline - RadioWave</title></head>
-    <body style="background:#0F172A;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;text-align:center">
-        <div>
-            <h1>📡 Sem Conexão</h1>
-            <p>Verifique sua internet e tente novamente.</p>
-        </div>
-    </body>
-    </html>`;
 }
