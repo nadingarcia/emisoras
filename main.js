@@ -505,12 +505,12 @@ async function fetchStations(endpoint, resetPagination = true) {
         if (resetPagination) {
             state.page = 0;
             state.noMoreData = false;
+            // IMPORTANTE: Limpa o grid ANTES de fazer qualquer coisa
+            elements.radioGrid.innerHTML = '';
         }
 
         showLoading();
         
-        // Dica: Adicionamos o parâmetro 'is_https=true' na URL da API quando possível,
-        // mas como usamos endpoints variados, o filtro client-side é mais garantido.
         const response = await fetch(`${API_BASE}${endpoint}`, {
             method: 'GET',
             headers: { 'User-Agent': 'NEX07-INFINITY/2.2' }
@@ -526,50 +526,50 @@ async function fetchStations(endpoint, resetPagination = true) {
         const validStations = data.filter(station => {
             const codec = (station.codec || '').toUpperCase();
             
-            // 1. Verificação básica de dados
             const hasUrl = station.url_resolved && station.url_resolved.trim() !== '';
             const isOnline = station.lastcheckok === 1;
-            
-            // 2. FILTRO HTTPS RIGOROSO
-            // O navegador VAI bloquear HTTP em site HTTPS. 
-            // Então, removemos antes de mostrar para não frustrar o usuário.
             const isHttps = station.url_resolved && station.url_resolved.startsWith('https://');
-
-            // 3. Filtro de Codec
             const isInvalidCodec = INVALID_CODECS.some(bad => codec.includes(bad));
 
-            // Retorna TRUE apenas se passar em tudo
             return hasUrl && isOnline && isHttps && !isInvalidCodec;
         });
 
-        // LÓGICA DE EMPTY STATE (Se o filtro removeu tudo)
+        // LÓGICA DE EMPTY STATE
         if (validStations.length === 0) {
             state.allStations = [];
+            // IMPORTANTE: Esconde o loading e limpa o grid
+            hideLoading();
+            elements.radioGrid.innerHTML = '';
+            elements.radioGrid.classList.add('hidden');
             updateStationCount(0);
             
-            // Personaliza mensagem se o problema foi HTTPS
-            // Verifica se existiam estações no original, mas foram filtradas
             if (data.length > 0) {
-                 showEmptyStateHTTPWarning(); // Nova função auxiliar abaixo
+                showEmptyStateHTTPWarning();
             } else {
-                 showEmptyState();
+                showEmptyState();
             }
             return;
         }
 
         // Priorização e Carregamento
         const sortedStations = prioritizeStationsByCountry(validStations);
+        
+        // IMPORTANTE: Atualiza o state ANTES de renderizar
         state.allStations = sortedStations;
-        state.noMoreData = false; 
+        state.noMoreData = false;
+        state.page = 0; // Garante que está em 0
 
         elements.emptyState.classList.add('hidden');
         elements.radioGrid.classList.remove('hidden');
 
+        // IMPORTANTE: Passa true para limpar (embora já limpamos acima, é segurança extra)
         loadNextPage(true);
         
     } catch (error) {
         console.error('Error fetching stations:', error);
         state.allStations = [];
+        elements.radioGrid.innerHTML = '';
+        hideLoading();
         updateStationCount(0);
         showError();
     } finally {
@@ -584,6 +584,9 @@ function loadNextPage(isFirst = false) {
     
     if (!isFirst) {
         showSkeletonForNextPage();
+    } else {
+        // IMPORTANTE: Se é a primeira página, FORÇA limpeza do grid
+        elements.radioGrid.innerHTML = '';
     }
     
     const start = state.page * state.pageSize;
@@ -602,13 +605,13 @@ function loadNextPage(isFirst = false) {
     }
     
     setTimeout(() => {
+        // IMPORTANTE: clearFirst = true apenas se isFirst = true
         appendStationsToGrid(pageStations, isFirst);
         state.page++;
         state.isFetching = false;
         hideSkeletonForNextPage();
     }, 300);
 }
-
 async function searchStations(query) {
     if (!query || query.trim() === '') {
         clearActiveFilter();
@@ -688,6 +691,7 @@ function showFavorites() {
 // ==================== UI RENDERING ====================
 function appendStationsToGrid(stations, clearFirst = false) {
     if (clearFirst) {
+        // IMPORTANTE: Limpa TUDO antes de adicionar
         elements.radioGrid.innerHTML = '';
         elements.radioGrid.classList.remove('hidden');
         elements.emptyState.classList.add('hidden');
@@ -718,7 +722,6 @@ function appendStationsToGrid(stations, clearFirst = false) {
     // Attach listeners
     attachCardListeners();
 }
-
 function createStationCard(station) {
     const article = document.createElement('article');
     const isPlaying = state.currentStation?.stationuuid === station.stationuuid;
