@@ -32,7 +32,8 @@ const state = {
     isFetching: false,
     noMoreData: false,
     isOnline: navigator.onLine,
-    activeFilterType: null // 'tag', 'country', 'search', 'popular', 'favorites'
+    activeFilterType: null, // 'tag', 'country', 'search', 'popular', 'favorites'
+    sidebarOpen: false
 };
 
 const DEFAULT_ARTWORK = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23334155' width='100' height='100'/%3E%3Ctext x='50' y='50' font-size='40' text-anchor='middle' dy='.3em' fill='%2364748b'%3E♫%3C/text%3E%3C/svg%3E";
@@ -162,6 +163,7 @@ const ALL_TAGS = [
 ];
 
 // ==================== CUSTOM TAGS & COUNTRIES MANAGEMENT ====================
+// ==================== CUSTOM TAGS & COUNTRIES MANAGEMENT (CORRIGIDO) ====================
 const CustomFilters = {
     TAGS_KEY: 'radiowave_custom_tags',
     COUNTRIES_KEY: 'radiowave_custom_countries',
@@ -212,6 +214,7 @@ const CustomFilters = {
             tags.push({ name: tagName, icon: icon });
             this.saveTags(tags);
             renderTags();
+            renderSidebar(); // <--- ADICIONADO: Atualiza o sidebar
             showToast({ message: `Tag "${tagName}" adicionada!`, type: 'success' });
             return true;
         }
@@ -223,6 +226,7 @@ const CustomFilters = {
         const filtered = tags.filter(t => t.name !== tagName);
         this.saveTags(filtered);
         renderTags();
+        renderSidebar(); // <--- ADICIONADO: Atualiza o sidebar
         showToast({ message: `Tag "${tagName}" removida`, type: 'info' });
     },
     
@@ -252,6 +256,7 @@ const CustomFilters = {
             countries.push({ code, name });
             this.saveCountries(countries);
             renderCountryFilters();
+            renderSidebar(); // <--- ADICIONADO: Atualiza o sidebar
             showToast({ message: `País "${name}" adicionado!`, type: 'success' });
             return true;
         }
@@ -263,6 +268,7 @@ const CustomFilters = {
         const filtered = countries.filter(c => c.code !== code);
         this.saveCountries(filtered);
         renderCountryFilters();
+        renderSidebar(); // <--- ADICIONADO: Atualiza o sidebar
         showToast({ message: 'País removido', type: 'info' });
     }
 };
@@ -354,8 +360,29 @@ const Favorites = {
     updateBadge() {
         const count = this.getLikes().length;
         elements.favoritesBadge.textContent = count;
+        
+        const sidebarBadge = document.getElementById('sidebarFavoritesBadge');
+        if (sidebarBadge) {
+            sidebarBadge.textContent = count;
+        }
     }
 };
+
+function toggleSidebar() {
+    state.sidebarOpen = !state.sidebarOpen;
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    
+    if (state.sidebarOpen) {
+        sidebar.classList.add('open');
+        overlay.classList.add('visible');
+        document.body.style.overflow = 'hidden';
+    } else {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('visible');
+        document.body.style.overflow = '';
+    }
+}
 
 // ==================== TOAST NOTIFICATION SYSTEM ====================
 function showToast({ message, type = 'info', duration = 4000 }) {
@@ -444,20 +471,19 @@ function hideActiveFilter() {
 }
 
 function clearActiveFilter() {
-    hideActiveFilter();
+    state.activeFilterType = null;
     state.currentTag = null;
     state.currentCountry = null;
     state.searchQuery = '';
     elements.searchInput.value = '';
-    clearAllActiveStates();
     
-    // Activate popular
-    const popularBtn = elements.filterButtons.querySelector('[data-filter="popular"]');
-    if (popularBtn) {
-        popularBtn.classList.add('active');
-    }
+    // Volta para populares
+    state.currentFilter = 'popular';
     
     loadStationsByFilter('popular');
+    
+    // Sincroniza visual (vai remover active do sidebar e botar em populares)
+    updateAllVisualStates();
 }
 
 // ==================== API FUNCTIONS ====================
@@ -480,19 +506,19 @@ async function fetchStations(endpoint, resetPagination = true) {
         
         const data = await response.json();
         
-        // FILTRAGEM E ORDENAÇÃO APRIMORADA
         const validStations = data.filter(station => 
             station.url_resolved && 
             station.url_resolved.trim() !== '' &&
             station.lastcheckok === 1 &&
             station.ssl_error === 0
-        ).sort((a, b) => {
-            return (b.clickcount || 0) - (a.clickcount || 0);
-        });
-        
-        state.allStations = validStations;
+        );
+
+        // Prioriza por país do usuário e depois por popularidade
+        const sortedStations = prioritizeStationsByCountry(validStations);
+
+        state.allStations = sortedStations;
         state.noMoreData = false; 
-        
+
         loadNextPage(true);
         
     } catch (error) {
@@ -551,32 +577,41 @@ async function searchStations(query) {
 function loadStationsByFilter(filter) {
     let endpoint;
     
-    // Clear tag state when switching filters
+    // Reseta estados conflitantes
     state.currentTag = null;
-    state.currentCountry = null;
-    clearTagActive();
+    state.searchQuery = '';
+    elements.searchInput.value = '';
     
     switch(filter) {
         case 'popular':
             endpoint = '/stations/topclick';
-            hideActiveFilter();
+            state.activeFilterType = null;
+            state.currentCountry = null;
             break;
         case 'favorites':
             showFavorites();
             updateUrlParams('favorites');
+            // Atualiza visual mesmo sendo favoritos
+            state.currentFilter = 'favorites';
+            updateAllVisualStates();
             return;
         default:
             endpoint = `/stations/bycountrycodeexact/${filter}`;
             state.currentCountry = filter;
+            state.activeFilterType = 'country';
+            // Busca o nome do país para exibir corretamente
             const country = CustomFilters.getCountries().find(c => c.code === filter);
             if (country) {
-                showActiveFilter('country', country.name);
+                // A atualização visual cuidará do banner
             }
     }
     
     state.currentFilter = filter;
     fetchStations(endpoint);
     updateUrlParams(filter);
+    
+    // MÁGICA AQUI: Sincroniza Sidebar e Menu Principal
+    updateAllVisualStates();
 }
 
 function showFavorites() {
@@ -930,6 +965,9 @@ async function playStation(station, card) {
     elements.audioPlayer.src = station.url_resolved;
     elements.audioPlayer.volume = elements.volumeSlider.value / 100;
     
+    // BUFFERING: Aguarda 1 segundo antes de tocar
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     // Play
     try {
         await elements.audioPlayer.play();
@@ -960,6 +998,54 @@ async function playStation(station, card) {
         }
         elements.playPauseBtn.classList.remove('loading');
     }
+}
+
+// ==================== GEOLOCATION & PRIORITIZATION ====================
+function getUserCountryCode() {
+    // Tenta detectar o país do usuário pela timezone
+    try {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const countryMap = {
+            'America/Sao_Paulo': 'BR',
+            'America/Fortaleza': 'BR',
+            'America/Manaus': 'BR',
+            'America/New_York': 'US',
+            'America/Los_Angeles': 'US',
+            'America/Chicago': 'US',
+            'Europe/London': 'GB',
+            'Europe/Paris': 'FR',
+            'Europe/Berlin': 'DE',
+            'Europe/Madrid': 'ES',
+            'Europe/Rome': 'IT',
+            'Europe/Lisbon': 'PT',
+            'America/Mexico_City': 'MX',
+            'America/Argentina/Buenos_Aires': 'AR',
+            'America/Bogota': 'CO',
+            'Asia/Tokyo': 'JP',
+            'Asia/Shanghai': 'CN',
+            'Australia/Sydney': 'AU'
+        };
+        
+        return countryMap[timezone] || 'BR'; // Default para Brasil
+    } catch (error) {
+        return 'BR';
+    }
+}
+
+function prioritizeStationsByCountry(stations) {
+    const userCountry = getUserCountryCode();
+    
+    return stations.sort((a, b) => {
+        // Primeiro: estações do país do usuário
+        const aIsUserCountry = a.countrycode === userCountry;
+        const bIsUserCountry = b.countrycode === userCountry;
+        
+        if (aIsUserCountry && !bIsUserCountry) return -1;
+        if (!aIsUserCountry && bIsUserCountry) return 1;
+        
+        // Segundo: por popularidade (clickcount)
+        return (b.clickcount || 0) - (a.clickcount || 0);
+    });
 }
 
 function togglePlayPause() {
@@ -1178,29 +1264,24 @@ function attachTagListeners() {
 }
 
 window.handleTagClick = async (tagName, element) => {
-    // Clear all active states
-    clearAllActiveStates();
-    
-    // Activate clicked tag
-    if (element) {
-        element.classList.add('active');
-    } else {
-        // If called programmatically, find and activate the button
-        const tagBtn = document.querySelector(`[data-tag="${tagName}"]`);
-        if (tagBtn) tagBtn.classList.add('active');
-    }
-    
-    // Clear search
-    elements.searchInput.value = '';
-    state.currentFilter = 'tag';
+    // Define o estado
+    state.currentFilter = 'tag'; // Marca tecnicamente como filtro de tag
     state.currentTag = tagName;
+    state.currentCountry = null;
+    state.activeFilterType = 'tag';
+    
+    // Limpa busca
+    elements.searchInput.value = '';
+    state.searchQuery = '';
     
     // Fetch stations by tag
     const endpoint = `/stations/bytag/${encodeURIComponent(tagName)}`;
     await fetchStations(endpoint);
     
     updateUrlParams('tag', '', tagName);
-    showActiveFilter('tag', tagName);
+    
+    // MÁGICA AQUI: Sincroniza tudo
+    updateAllVisualStates();
 };
 
 // ==================== COUNTRY FILTERS RENDERING ====================
@@ -1240,6 +1321,117 @@ function renderCountryFilters() {
     
     // Reattach filter listeners
     attachFilterListeners();
+}
+
+// ==================== SIDEBAR RENDERING ====================
+function renderSidebar() {
+    const countries = CustomFilters.getCountries();
+    const tags = CustomFilters.getTags();
+    
+    // ==========================================
+    // 1. RENDERIZA PAÍSES
+    // ==========================================
+    const sidebarCountries = document.getElementById('sidebarCountries');
+    if (sidebarCountries) {
+        sidebarCountries.innerHTML = countries.map(country => `
+            <button class="sidebar-btn ${state.currentCountry === country.code ? 'active' : ''}" 
+                    data-country="${country.code}" 
+                    data-country-name="${country.name}">
+                <img src="https://flagcdn.com/24x18/${country.code.toLowerCase()}.png" alt="${country.name}" class="country-flag">
+                <span>${country.name}</span>
+            </button>
+        `).join('');
+        
+        // Listeners dos Países
+        sidebarCountries.querySelectorAll('.sidebar-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const code = btn.getAttribute('data-country');
+                
+                // Fecha o sidebar
+                if (state.sidebarOpen) toggleSidebar();
+                
+                // Carrega o filtro (Isso vai chamar o updateAllVisualStates internamente)
+                loadStationsByFilter(code);
+            });
+        });
+    }
+    
+    // ==========================================
+    // 2. RENDERIZA TAGS (GÊNEROS) - Faltava isso no seu snippet
+    // ==========================================
+    const sidebarTags = document.getElementById('sidebarTags');
+    if (sidebarTags) {
+        sidebarTags.innerHTML = tags.map(tag => `
+            <button class="sidebar-btn ${state.currentTag === tag.name ? 'active' : ''}" 
+                    data-tag="${tag.name}">
+                <i class="fas ${tag.icon}"></i>
+                <span>${tag.name}</span>
+            </button>
+        `).join('');
+        
+        // Listeners das Tags
+        sidebarTags.querySelectorAll('.sidebar-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tagName = btn.getAttribute('data-tag');
+                
+                // Fecha o sidebar
+                if (state.sidebarOpen) toggleSidebar();
+                
+                // Carrega a tag (Isso vai chamar o updateAllVisualStates internamente)
+                handleTagClick(tagName, null);
+            });
+        });
+    }
+
+    // ==========================================
+    // 3. ATUALIZA O RESUMO NO TOPO DO SIDEBAR
+    // ==========================================
+    updateSidebarActiveFilters();
+}
+function updateSidebarActiveFilters() {
+    const activeFiltersList = document.getElementById('activeFiltersList');
+    const btnClearAll = document.querySelector('.btn-clear-all');
+    const sidebarBadge = document.getElementById('sidebarFavoritesBadge');
+    
+    if (sidebarBadge) {
+        sidebarBadge.textContent = Favorites.getLikes().length;
+    }
+    
+    if (!activeFiltersList) return;
+    
+    const filters = [];
+    
+    // CORREÇÃO: Usa state.currentCountry ao invés de state.activeFilters.country
+    if (state.currentCountry) {
+        const country = CustomFilters.getCountries().find(c => c.code === state.currentCountry);
+        if (country) filters.push({ type: 'country', name: country.name, icon: 'fa-flag' });
+    }
+    
+    // CORREÇÃO: Usa state.currentTag ao invés de state.activeFilters.tag
+    if (state.currentTag) {
+        filters.push({ type: 'tag', name: state.currentTag, icon: 'fa-tag' });
+    }
+    
+    if (filters.length === 0) {
+        activeFiltersList.innerHTML = '<p class="no-filters">Nenhum filtro ativo</p>';
+        if (btnClearAll) btnClearAll.style.display = 'none';
+    } else {
+        activeFiltersList.innerHTML = filters.map(f => `
+            <span class="filter-chip">
+                <i class="fas ${f.icon}"></i>
+                ${f.name}
+            </span>
+        `).join('');
+        
+        if (btnClearAll) {
+            btnClearAll.style.display = 'flex';
+            // Garante que o botão de limpar funcione
+            btnClearAll.onclick = () => {
+                if (state.sidebarOpen) toggleSidebar();
+                clearActiveFilter();
+            };
+        }
+    }
 }
 
 function attachFilterListeners() {
@@ -1563,6 +1755,56 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// ==================== VISUAL SYNC MANAGEMENT ====================
+function updateAllVisualStates() {
+    // 1. Limpa tudo primeiro
+    document.querySelectorAll('.filter-btn, .tag-card, .sidebar-btn').forEach(el => {
+        el.classList.remove('active');
+    });
+
+    // 2. Marca Filtros Principais (Botões de País/Populares)
+    if (state.currentFilter) {
+        const mainFilterBtn = document.querySelector(`.filter-btn[data-filter="${state.currentFilter}"]`);
+        if (mainFilterBtn) mainFilterBtn.classList.add('active');
+        
+        // Marca no Sidebar (Países)
+        const sidebarCountryBtn = document.querySelector(`#sidebarCountries .sidebar-btn[data-country="${state.currentFilter}"]`);
+        if (sidebarCountryBtn) sidebarCountryBtn.classList.add('active');
+    }
+
+    // 3. Marca Tags (Gêneros)
+    if (state.currentTag) {
+        // Marca na nuvem de tags principal
+        const mainTagBtn = document.querySelector(`.tag-card[data-tag="${state.currentTag}"]`);
+        if (mainTagBtn) mainTagBtn.classList.add('active');
+
+        // Marca no Sidebar (Tags)
+        const sidebarTagBtn = document.querySelector(`#sidebarTags .sidebar-btn[data-tag="${state.currentTag}"]`);
+        if (sidebarTagBtn) sidebarTagBtn.classList.add('active');
+    }
+
+    // 4. Atualiza o Banner de Filtro Ativo na tela principal
+    if (state.activeFilterType) {
+        let name = '';
+        if (state.currentTag) name = state.currentTag;
+        else if (state.currentCountry) {
+             const c = CustomFilters.getCountries().find(x => x.code === state.currentCountry);
+             name = c ? c.name : state.currentCountry;
+        }
+        else if (state.searchQuery) name = state.searchQuery;
+        
+        // Só chama se não for busca (busca tem lógica própria)
+        if (state.activeFilterType !== 'search') {
+            showActiveFilter(state.activeFilterType, name);
+        }
+    } else {
+        hideActiveFilter();
+    }
+
+    // 5. Atualiza o resumo no topo do Sidebar
+    updateSidebarActiveFilters();
+}
+
 // ==================== INITIALIZATION ====================
 function init() {
     elements.audioPlayer.volume = 0.7;
@@ -1574,6 +1816,7 @@ function init() {
     // Renderiza as tags e países customizáveis
     renderTags();
     renderCountryFilters();
+    renderSidebar();
     
     if (!state.isOnline) {
         elements.offlineIndicator.classList.remove('hidden');

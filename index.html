@@ -74,21 +74,77 @@
     
     <!-- Header -->
     <header class="header app-header">
-        <div class="container">
-            <div class="header-content">
-                <h1 class="logo">
-                    <i class="fas fa-radio"></i>
-                    NEX07 INFINITY
-                </h1>
-                <div class="header-actions">
-                    <button class="favorites-badge-btn" id="favoritesBadgeBtn" aria-label="Ver favoritos">
-                        <i class="fas fa-heart"></i>
-                        <span class="badge" id="favoritesBadge">0</span>
-                    </button>
-                </div>
+    <div class="container">
+        <div class="header-content">
+            <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Abrir filtros">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h1 class="logo">
+                <i class="fas fa-radio"></i>
+                NEX07 INFINITY
+            </h1>
+            <div class="header-actions">
+                <button class="favorites-badge-btn" id="favoritesBadgeBtn" aria-label="Ver favoritos">
+                    <i class="fas fa-heart"></i>
+                    <span class="badge" id="favoritesBadge">0</span>
+                </button>
             </div>
         </div>
-    </header>
+    </div>
+</header>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-sliders-h"></i> Filtros</h2>
+            <button class="sidebar-close" onclick="toggleSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="sidebar-content">
+            <!-- Active Filters Summary -->
+            <div class="sidebar-section" id="activeFiltersSummary">
+                <h3><i class="fas fa-filter"></i> Filtros Ativos</h3>
+                <div id="activeFiltersList" class="active-filters-list">
+                    <p class="no-filters">Nenhum filtro ativo</p>
+                </div>
+                <button class="btn-clear-all" onclick="clearAllFilters()" style="display: none;">
+                    <i class="fas fa-times-circle"></i> Limpar Todos
+                </button>
+            </div>
+            
+            <!-- Country Filters -->
+            <div class="sidebar-section">
+                <h3><i class="fas fa-globe"></i> Países</h3>
+                <div id="sidebarCountries" class="sidebar-filters"></div>
+                <button class="btn-add" onclick="openAddCountryModal()">
+                    <i class="fas fa-plus"></i> Adicionar País
+                </button>
+            </div>
+            
+            <!-- Tag Filters -->
+            <div class="sidebar-section">
+                <h3><i class="fas fa-tags"></i> Gêneros</h3>
+                <div id="sidebarTags" class="sidebar-filters"></div>
+                <button class="btn-add" onclick="openAddTagModal()">
+                    <i class="fas fa-plus"></i> Adicionar Gênero
+                </button>
+            </div>
+            
+            <!-- Favorites -->
+            <div class="sidebar-section">
+                <button class="sidebar-btn" onclick="toggleSidebar(); document.querySelector('[data-filter=favorites]').click();">
+                    <i class="fas fa-heart"></i>
+                    <span>Minhas Favoritas</span>
+                    <span class="badge" id="sidebarFavoritesBadge">0</span>
+                </button>
+            </div>
+        </div>
+    </aside>
 
     <!-- Main Content -->
     <main class="main container">
