@@ -499,19 +499,38 @@ async function fetchStations(endpoint, resetPagination = true) {
         
         const response = await fetch(`${API_BASE}${endpoint}`, {
             method: 'GET',
-            headers: { 'User-Agent': 'RadioWave/2.0' }
+            headers: { 'User-Agent': 'NEX07-INFINITY/2.2' }
         });
         
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
         const data = await response.json();
         
-        const validStations = data.filter(station => 
-            station.url_resolved && 
-            station.url_resolved.trim() !== '' &&
-            station.lastcheckok === 1 &&
-            station.ssl_error === 0
-        );
+        // Lista de codecs proibidos (Vídeo ou não suportados na Web)
+        const INVALID_CODECS = ['H.264', 'MP4', 'WMA', 'WMV', 'FLV', 'MKV', 'VP8', 'VP9'];
+
+        const validStations = data.filter(station => {
+            const codec = (station.codec || '').toUpperCase();
+            
+            // 1. Verificações básicas de integridade
+            const isBasicValid = station.url_resolved && 
+                               station.url_resolved.trim() !== '' &&
+                               station.lastcheckok === 1 &&
+                               station.ssl_error === 0;
+
+            if (!isBasicValid) return false;
+
+            // 2. Filtro de Codec (Remove Vídeo e WMA)
+            // Se o codec contiver qualquer texto da lista proibida, rejeita.
+            const isInvalidCodec = INVALID_CODECS.some(bad => codec.includes(bad));
+            
+            // 3. Garante que é um codec de áudio web comum (MP3, AAC, OGG, OPUS)
+            // Opcional: Se quiser ser muito estrito, descomente a linha abaixo.
+            // Mas a verificação "isInvalidCodec" já resolve 99% dos casos.
+            // const isAudio = ['MP3', 'AAC', 'OGG', 'OPUS', 'M4A'].some(good => codec.includes(good));
+
+            return !isInvalidCodec;
+        });
 
         // Prioriza por país do usuário e depois por popularidade
         const sortedStations = prioritizeStationsByCountry(validStations);
