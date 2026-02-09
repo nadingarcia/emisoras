@@ -487,12 +487,14 @@ function clearActiveFilter() {
 }
 
 // ==================== API FUNCTIONS ====================
+// ==================== API FUNCTIONS ====================
 async function fetchStations(endpoint, resetPagination = true) {
     try {
         if (resetPagination) {
             state.page = 0;
             state.noMoreData = false;
-            state.allStations = [];
+            // NÃO zeramos o allStations aqui ainda para evitar piscar a tela
+            // se der erro, mas vamos zerar se vier vazio.
         }
 
         showLoading();
@@ -506,13 +508,13 @@ async function fetchStations(endpoint, resetPagination = true) {
         
         const data = await response.json();
         
-        // Lista de codecs proibidos (Vídeo ou não suportados na Web)
+        // CODECS INVALIDOS (Video/WMA)
         const INVALID_CODECS = ['H.264', 'MP4', 'WMA', 'WMV', 'FLV', 'MKV', 'VP8', 'VP9'];
 
         const validStations = data.filter(station => {
             const codec = (station.codec || '').toUpperCase();
             
-            // 1. Verificações básicas de integridade
+            // Validação básica
             const isBasicValid = station.url_resolved && 
                                station.url_resolved.trim() !== '' &&
                                station.lastcheckok === 1 &&
@@ -520,30 +522,50 @@ async function fetchStations(endpoint, resetPagination = true) {
 
             if (!isBasicValid) return false;
 
-            // 2. Filtro de Codec (Remove Vídeo e WMA)
-            // Se o codec contiver qualquer texto da lista proibida, rejeita.
+            // Filtro de Codec
             const isInvalidCodec = INVALID_CODECS.some(bad => codec.includes(bad));
-            
-            // 3. Garante que é um codec de áudio web comum (MP3, AAC, OGG, OPUS)
-            // Opcional: Se quiser ser muito estrito, descomente a linha abaixo.
-            // Mas a verificação "isInvalidCodec" já resolve 99% dos casos.
-            // const isAudio = ['MP3', 'AAC', 'OGG', 'OPUS', 'M4A'].some(good => codec.includes(good));
-
             return !isInvalidCodec;
         });
 
-        // Prioriza por país do usuário e depois por popularidade
-        const sortedStations = prioritizeStationsByCountry(validStations);
+        // CORREÇÃO DO BUG: Se não sobrou nada, exibe empty state AGORA
+        if (validStations.length === 0) {
+            state.allStations = []; // Limpa o estado
+            updateStationCount(0); // Zera o contador visualmente
+            showEmptyState(); // Mostra o design bonito
+            return; // PARA A EXECUÇÃO AQUI
+        }
 
+        // Se tem estações, continua normal
+        const sortedStations = prioritizeStationsByCountry(validStations);
         state.allStations = sortedStations;
         state.noMoreData = false; 
+
+        // Esconde o empty state caso estivesse visível
+        elements.emptyState.classList.add('hidden');
+        elements.radioGrid.classList.remove('hidden');
 
         loadNextPage(true);
         
     } catch (error) {
         console.error('Error fetching stations:', error);
-        showToast({ message: 'Erro ao carregar. Tentando cache...', type: 'error' });
-        showError();
+        
+        // Em caso de erro de rede, zera tudo também
+        state.allStations = [];
+        updateStationCount(0);
+        
+        // Mostra mensagem de erro
+        elements.radioGrid.classList.add('hidden');
+        elements.emptyState.classList.remove('hidden');
+        elements.emptyState.innerHTML = `
+            <div class="empty-icon-wrapper" style="background: rgba(239, 68, 68, 0.1);">
+                <i class="fas fa-wifi" style="color: var(--error-color);"></i>
+            </div>
+            <h3>Erro de Conexão</h3>
+            <p>Não foi possível carregar as emissoras.</p>
+            <button onclick="location.reload()" class="btn-reset" style="background: var(--error-color); color: white;">
+                Tentar Novamente
+            </button>
+        `;
     } finally {
         hideLoading();
     }
@@ -1185,8 +1207,37 @@ function hideLoading() {
 }
 
 function showEmptyState() {
-    elements.emptyState.classList.remove('hidden');
     elements.radioGrid.classList.add('hidden');
+    elements.loadingSkeleton.classList.add('hidden');
+    elements.emptyState.classList.remove('hidden');
+
+    // Define a mensagem baseada no contexto
+    let title = 'Nenhuma emissora encontrada';
+    let message = 'Tente ajustar sua busca ou filtros.';
+    let subMessage = '';
+
+    if (state.searchQuery) {
+        message = `Não encontramos resultados de áudio para "<strong>${escapeHtml(state.searchQuery)}</strong>".`;
+        subMessage = 'Nota: Filtramos canais de TV (H.264) para garantir que o áudio funcione.';
+    } else if (state.currentTag) {
+        message = `Nenhuma rádio encontrada no gênero "${state.currentTag}".`;
+    }
+
+    // HTML Moderno
+    elements.emptyState.innerHTML = `
+        <div class="empty-icon-wrapper">
+            <i class="fas fa-search"></i>
+        </div>
+        <h3>${title}</h3>
+        <p>${message}</p>
+        ${subMessage ? `<p class="sub-text">${subMessage}</p>` : ''}
+        <button onclick="clearActiveFilter()" class="btn-reset">
+            <i class="fas fa-arrow-left"></i> Voltar ao Início
+        </button>
+    `;
+    
+    // FORÇA a atualização do contador para 0
+    updateStationCount(0);
 }
 
 function showError() {
