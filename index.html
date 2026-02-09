@@ -236,6 +236,48 @@
         </div>
     </aside>
 
+    <!-- Modal para adicionar país -->
+<div id="addCountryModal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-globe-americas"></i> Adicionar País</h3>
+            <button class="modal-close" onclick="closeAddCountryModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="countrySearch" placeholder="Buscar país..." />
+            </div>
+            <div class="country-list" id="countryList">
+                <!-- Países serão inseridos via JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para adicionar tag -->
+<div id="addTagModal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-tags"></i> Adicionar Gênero Musical</h3>
+            <button class="modal-close" onclick="closeAddTagModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="tagSearch" placeholder="Buscar gênero..." />
+            </div>
+            <div class="tag-list" id="tagList">
+                <!-- Tags serão inseridas via JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
     <!-- Audio Element -->
     <audio id="audioPlayer" preload="none"></audio>
 

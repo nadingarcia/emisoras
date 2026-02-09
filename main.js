@@ -66,6 +66,101 @@ const elements = {
 // ==================== API CONFIGURATION ====================
 const API_BASE = 'https://de1.api.radio-browser.info/json';
 
+// ==================== COUNTRY & TAG DATA ====================
+const ALL_COUNTRIES = [
+    { code: 'AF', name: 'Afeganistão' }, { code: 'ZA', name: 'África do Sul' }, { code: 'AL', name: 'Albânia' },
+    { code: 'DE', name: 'Alemanha' }, { code: 'AD', name: 'Andorra' }, { code: 'AO', name: 'Angola' },
+    { code: 'AG', name: 'Antígua e Barbuda' }, { code: 'SA', name: 'Arábia Saudita' }, { code: 'DZ', name: 'Argélia' },
+    { code: 'AR', name: 'Argentina' }, { code: 'AM', name: 'Armênia' }, { code: 'AU', name: 'Austrália' },
+    { code: 'AT', name: 'Áustria' }, { code: 'AZ', name: 'Azerbaijão' }, { code: 'BS', name: 'Bahamas' },
+    { code: 'BD', name: 'Bangladesh' }, { code: 'BB', name: 'Barbados' }, { code: 'BH', name: 'Bahrein' },
+    { code: 'BE', name: 'Bélgica' }, { code: 'BZ', name: 'Belize' }, { code: 'BJ', name: 'Benin' },
+    { code: 'BY', name: 'Bielorrússia' }, { code: 'BO', name: 'Bolívia' }, { code: 'BA', name: 'Bósnia e Herzegovina' },
+    { code: 'BW', name: 'Botsuana' }, { code: 'BR', name: 'Brasil' }, { code: 'BN', name: 'Brunei' },
+    { code: 'BG', name: 'Bulgária' }, { code: 'BF', name: 'Burkina Faso' }, { code: 'BI', name: 'Burundi' },
+    { code: 'BT', name: 'Butão' }, { code: 'CV', name: 'Cabo Verde' }, { code: 'CM', name: 'Camarões' },
+    { code: 'KH', name: 'Camboja' }, { code: 'CA', name: 'Canadá' }, { code: 'QA', name: 'Catar' },
+    { code: 'KZ', name: 'Cazaquistão' }, { code: 'TD', name: 'Chade' }, { code: 'CL', name: 'Chile' },
+    { code: 'CN', name: 'China' }, { code: 'CY', name: 'Chipre' }, { code: 'CO', name: 'Colômbia' },
+    { code: 'KM', name: 'Comores' }, { code: 'CG', name: 'Congo' }, { code: 'KP', name: 'Coreia do Norte' },
+    { code: 'KR', name: 'Coreia do Sul' }, { code: 'CI', name: 'Costa do Marfim' }, { code: 'CR', name: 'Costa Rica' },
+    { code: 'HR', name: 'Croácia' }, { code: 'CU', name: 'Cuba' }, { code: 'DK', name: 'Dinamarca' },
+    { code: 'DJ', name: 'Djibuti' }, { code: 'DM', name: 'Dominica' }, { code: 'EG', name: 'Egito' },
+    { code: 'SV', name: 'El Salvador' }, { code: 'AE', name: 'Emirados Árabes Unidos' }, { code: 'EC', name: 'Equador' },
+    { code: 'ER', name: 'Eritreia' }, { code: 'SK', name: 'Eslováquia' }, { code: 'SI', name: 'Eslovênia' },
+    { code: 'ES', name: 'Espanha' }, { code: 'US', name: 'Estados Unidos' }, { code: 'EE', name: 'Estônia' },
+    { code: 'SZ', name: 'Eswatini' }, { code: 'ET', name: 'Etiópia' }, { code: 'FJ', name: 'Fiji' },
+    { code: 'PH', name: 'Filipinas' }, { code: 'FI', name: 'Finlândia' }, { code: 'FR', name: 'França' },
+    { code: 'GA', name: 'Gabão' }, { code: 'GM', name: 'Gâmbia' }, { code: 'GH', name: 'Gana' },
+    { code: 'GE', name: 'Geórgia' }, { code: 'GD', name: 'Granada' }, { code: 'GR', name: 'Grécia' },
+    { code: 'GT', name: 'Guatemala' }, { code: 'GY', name: 'Guiana' }, { code: 'GN', name: 'Guiné' },
+    { code: 'GW', name: 'Guiné-Bissau' }, { code: 'GQ', name: 'Guiné Equatorial' }, { code: 'HT', name: 'Haiti' },
+    { code: 'HN', name: 'Honduras' }, { code: 'HU', name: 'Hungria' }, { code: 'YE', name: 'Iêmen' },
+    { code: 'IN', name: 'Índia' }, { code: 'ID', name: 'Indonésia' }, { code: 'IR', name: 'Irã' },
+    { code: 'IQ', name: 'Iraque' }, { code: 'IE', name: 'Irlanda' }, { code: 'IS', name: 'Islândia' },
+    { code: 'IL', name: 'Israel' }, { code: 'IT', name: 'Itália' }, { code: 'JM', name: 'Jamaica' },
+    { code: 'JP', name: 'Japão' }, { code: 'JO', name: 'Jordânia' }, { code: 'KW', name: 'Kuwait' },
+    { code: 'LA', name: 'Laos' }, { code: 'LS', name: 'Lesoto' }, { code: 'LV', name: 'Letônia' },
+    { code: 'LB', name: 'Líbano' }, { code: 'LR', name: 'Libéria' }, { code: 'LY', name: 'Líbia' },
+    { code: 'LI', name: 'Liechtenstein' }, { code: 'LT', name: 'Lituânia' }, { code: 'LU', name: 'Luxemburgo' },
+    { code: 'MK', name: 'Macedônia do Norte' }, { code: 'MG', name: 'Madagascar' }, { code: 'MY', name: 'Malásia' },
+    { code: 'MW', name: 'Malawi' }, { code: 'MV', name: 'Maldivas' }, { code: 'ML', name: 'Mali' },
+    { code: 'MT', name: 'Malta' }, { code: 'MA', name: 'Marrocos' }, { code: 'MU', name: 'Maurício' },
+    { code: 'MR', name: 'Mauritânia' }, { code: 'MX', name: 'México' }, { code: 'MM', name: 'Mianmar' },
+    { code: 'FM', name: 'Micronésia' }, { code: 'MZ', name: 'Moçambique' }, { code: 'MD', name: 'Moldávia' },
+    { code: 'MC', name: 'Mônaco' }, { code: 'MN', name: 'Mongólia' }, { code: 'ME', name: 'Montenegro' },
+    { code: 'NA', name: 'Namíbia' }, { code: 'NR', name: 'Nauru' }, { code: 'NP', name: 'Nepal' },
+    { code: 'NI', name: 'Nicarágua' }, { code: 'NE', name: 'Níger' }, { code: 'NG', name: 'Nigéria' },
+    { code: 'NO', name: 'Noruega' }, { code: 'NZ', name: 'Nova Zelândia' }, { code: 'OM', name: 'Omã' },
+    { code: 'NL', name: 'Países Baixos' }, { code: 'PW', name: 'Palau' }, { code: 'PA', name: 'Panamá' },
+    { code: 'PG', name: 'Papua-Nova Guiné' }, { code: 'PK', name: 'Paquistão' }, { code: 'PY', name: 'Paraguai' },
+    { code: 'PE', name: 'Peru' }, { code: 'PL', name: 'Polônia' }, { code: 'PT', name: 'Portugal' }, { code: 'PR', name: 'Puerto Rico' },
+    { code: 'KE', name: 'Quênia' }, { code: 'KG', name: 'Quirguistão' }, { code: 'GB', name: 'Reino Unido' },
+    { code: 'CF', name: 'República Centro-Africana' }, { code: 'DO', name: 'República Dominicana' },
+    { code: 'CZ', name: 'República Tcheca' }, { code: 'RO', name: 'Romênia' }, { code: 'RW', name: 'Ruanda' },
+    { code: 'RU', name: 'Rússia' }, { code: 'SB', name: 'Ilhas Salomão' }, { code: 'WS', name: 'Samoa' },
+    { code: 'SM', name: 'San Marino' }, { code: 'LC', name: 'Santa Lúcia' }, { code: 'ST', name: 'São Tomé e Príncipe' },
+    { code: 'SN', name: 'Senegal' }, { code: 'SL', name: 'Serra Leoa' }, { code: 'RS', name: 'Sérvia' },
+    { code: 'SC', name: 'Seychelles' }, { code: 'SG', name: 'Singapura' }, { code: 'SY', name: 'Síria' },
+    { code: 'SO', name: 'Somália' }, { code: 'LK', name: 'Sri Lanka' }, { code: 'SD', name: 'Sudão' },
+    { code: 'SS', name: 'Sudão do Sul' }, { code: 'SE', name: 'Suécia' }, { code: 'CH', name: 'Suíça' },
+    { code: 'SR', name: 'Suriname' }, { code: 'TJ', name: 'Tadjiquistão' }, { code: 'TH', name: 'Tailândia' },
+    { code: 'TZ', name: 'Tanzânia' }, { code: 'TL', name: 'Timor-Leste' }, { code: 'TG', name: 'Togo' },
+    { code: 'TO', name: 'Tonga' }, { code: 'TT', name: 'Trinidad e Tobago' }, { code: 'TN', name: 'Tunísia' },
+    { code: 'TM', name: 'Turcomenistão' }, { code: 'TR', name: 'Turquia' }, { code: 'TV', name: 'Tuvalu' },
+    { code: 'UA', name: 'Ucrânia' }, { code: 'UG', name: 'Uganda' }, { code: 'UY', name: 'Uruguai' },
+    { code: 'UZ', name: 'Uzbequistão' }, { code: 'VU', name: 'Vanuatu' }, { code: 'VA', name: 'Vaticano' },
+    { code: 'VE', name: 'Venezuela' }, { code: 'VN', name: 'Vietnã' }, { code: 'ZM', name: 'Zâmbia' },
+    { code: 'ZW', name: 'Zimbábue' }
+];
+
+const ALL_TAGS = [
+    { name: 'pop', icon: 'fa-music' }, { name: 'rock', icon: 'fa-guitar' }, { name: 'jazz', icon: 'fa-saxophone' },
+    { name: 'classical', icon: 'fa-violin' }, { name: 'electronic', icon: 'fa-bolt' }, { name: 'dance', icon: 'fa-child' },
+    { name: 'hip hop', icon: 'fa-microphone' }, { name: 'rap', icon: 'fa-microphone' }, { name: 'r&b', icon: 'fa-heart' },
+    { name: 'reggae', icon: 'fa-leaf' }, { name: 'blues', icon: 'fa-guitar' }, { name: 'country', icon: 'fa-horse' },
+    { name: 'folk', icon: 'fa-guitar' }, { name: 'latin', icon: 'fa-fire' }, { name: 'salsa', icon: 'fa-fire' },
+    { name: 'samba', icon: 'fa-drum' }, { name: 'bossa nova', icon: 'fa-guitar' }, { name: 'funk', icon: 'fa-bolt' },
+    { name: 'soul', icon: 'fa-heart' }, { name: 'disco', icon: 'fa-record-vinyl' }, { name: 'house', icon: 'fa-home' },
+    { name: 'techno', icon: 'fa-robot' }, { name: 'trance', icon: 'fa-music' }, { name: 'dubstep', icon: 'fa-bass' },
+    { name: 'metal', icon: 'fa-skull' }, { name: 'punk', icon: 'fa-fist-raised' }, { name: 'indie', icon: 'fa-star' },
+    { name: 'alternative', icon: 'fa-compact-disc' }, { name: 'grunge', icon: 'fa-guitar' },
+    { name: 'gospel', icon: 'fa-cross' }, { name: 'christian', icon: 'fa-church' }, { name: 'worship', icon: 'fa-praying-hands' },
+    { name: 'news', icon: 'fa-newspaper' }, { name: 'talk', icon: 'fa-comments' }, { name: 'sports', icon: 'fa-football-ball' },
+    { name: 'comedy', icon: 'fa-laugh' }, { name: 'podcast', icon: 'fa-podcast' },
+    { name: '80s', icon: 'fa-history' }, { name: '90s', icon: 'fa-compact-disc' }, { name: '70s', icon: 'fa-record-vinyl' },
+    { name: '60s', icon: 'fa-peace' }, { name: 'oldies', icon: 'fa-clock' }, { name: 'retro', icon: 'fa-backward' },
+    { name: 'ambient', icon: 'fa-cloud' }, { name: 'chillout', icon: 'fa-couch' }, { name: 'lounge', icon: 'fa-cocktail' },
+    { name: 'easy listening', icon: 'fa-spa' }, { name: 'smooth jazz', icon: 'fa-wine-glass' },
+    { name: 'world', icon: 'fa-globe' }, { name: 'african', icon: 'fa-drum' }, { name: 'asian', icon: 'fa-yin-yang' },
+    { name: 'bollywood', icon: 'fa-film' }, { name: 'k-pop', icon: 'fa-star' }, { name: 'j-pop', icon: 'fa-music' },
+    { name: 'kids', icon: 'fa-child' }, { name: 'christmas', icon: 'fa-gifts' }, { name: 'halloween', icon: 'fa-ghost' },
+    { name: 'romantic', icon: 'fa-heart' }, { name: 'love songs', icon: 'fa-heart-pulse' },
+    { name: 'instrumental', icon: 'fa-music' }, { name: 'acoustic', icon: 'fa-guitar' },
+    { name: 'live', icon: 'fa-broadcast-tower' }, { name: 'dj', icon: 'fa-headphones' },
+    { name: 'top 40', icon: 'fa-chart-line' }, { name: 'hits', icon: 'fa-fire' }, { name: 'charts', icon: 'fa-trophy' }
+];
+
 // ==================== CUSTOM TAGS & COUNTRIES MANAGEMENT ====================
 const CustomFilters = {
     TAGS_KEY: 'radiowave_custom_tags',
@@ -1078,15 +1173,7 @@ function attachTagListeners() {
     // Add tag button
     const addBtn = document.querySelector('.add-tag-btn');
     if (addBtn) {
-        addBtn.addEventListener('click', () => {
-            const tagName = prompt('Digite o nome da nova tag (gênero musical):');
-            if (tagName && tagName.trim()) {
-                const added = CustomFilters.addTag(tagName.trim().toLowerCase());
-                if (!added) {
-                    showToast({ message: 'Esta tag já existe!', type: 'warning' });
-                }
-            }
-        });
+        addBtn.addEventListener('click', openAddTagModal);
     }
 }
 
@@ -1201,22 +1288,7 @@ function attachFilterListeners() {
     // Add country button
     const addBtn = elements.filterButtons.querySelector('.add-country-btn');
     if (addBtn) {
-        addBtn.addEventListener('click', () => {
-            const countryCode = prompt('Digite o código do país (2 letras, ex: BR, US, DE):');
-            if (countryCode && countryCode.trim().length === 2) {
-                const code = countryCode.trim().toUpperCase();
-                const name = prompt(`Digite o nome do país para ${code}:`);
-                
-                if (name && name.trim()) {
-                    const added = CustomFilters.addCountry(code, name.trim());
-                    if (!added) {
-                        showToast({ message: 'Este país já existe!', type: 'warning' });
-                    }
-                }
-            } else {
-                showToast({ message: 'Código inválido! Use 2 letras (ex: BR)', type: 'error' });
-            }
-        });
+        addBtn.addEventListener('click', openAddCountryModal);
     }
 }
 
@@ -1362,6 +1434,134 @@ function registerServiceWorker() {
             });
     }
 }
+
+// ==================== MODAL FUNCTIONS ====================
+function openAddCountryModal() {
+    const modal = document.getElementById('addCountryModal');
+    const countryList = document.getElementById('countryList');
+    const searchInput = document.getElementById('countrySearch');
+    
+    const existingCountries = CustomFilters.getCountries().map(c => c.code);
+    
+    function renderCountries(filter = '') {
+        const filtered = ALL_COUNTRIES.filter(c => 
+            c.name.toLowerCase().includes(filter.toLowerCase()) ||
+            c.code.toLowerCase().includes(filter.toLowerCase())
+        );
+        
+        countryList.innerHTML = filtered.map(country => `
+            <div class="country-item ${existingCountries.includes(country.code) ? 'selected' : ''}" data-code="${country.code}" data-name="${country.name}">
+                <img src="https://flagcdn.com/32x24/${country.code.toLowerCase()}.png" alt="${country.name}" class="country-flag-large" onerror="this.style.display='none'">
+                <span class="country-name">${country.name}</span>
+                <span class="country-code">${country.code}</span>
+                <i class="fas fa-check check-icon"></i>
+            </div>
+        `).join('');
+        
+        // Attach click handlers
+        countryList.querySelectorAll('.country-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const code = item.getAttribute('data-code');
+                const name = item.getAttribute('data-name');
+                
+                if (item.classList.contains('selected')) {
+                    showToast({ message: 'País já adicionado!', type: 'warning' });
+                } else {
+                    CustomFilters.addCountry(code, name);
+                    closeAddCountryModal();
+                }
+            });
+        });
+    }
+    
+    renderCountries();
+    
+    searchInput.value = '';
+    searchInput.addEventListener('input', (e) => {
+        renderCountries(e.target.value);
+    });
+    
+    modal.classList.remove('hidden');
+    searchInput.focus();
+}
+
+function closeAddCountryModal() {
+    document.getElementById('addCountryModal').classList.add('hidden');
+}
+
+function openAddTagModal() {
+    const modal = document.getElementById('addTagModal');
+    const tagList = document.getElementById('tagList');
+    const searchInput = document.getElementById('tagSearch');
+    
+    const existingTags = CustomFilters.getTags().map(t => t.name.toLowerCase());
+    
+    function renderTags(filter = '') {
+        const filtered = ALL_TAGS.filter(t => 
+            t.name.toLowerCase().includes(filter.toLowerCase())
+        );
+        
+        tagList.innerHTML = filtered.map(tag => `
+            <div class="tag-item ${existingTags.includes(tag.name.toLowerCase()) ? 'selected' : ''}" data-tag="${tag.name}" data-icon="${tag.icon}">
+                <div class="tag-icon-display">
+                    <i class="fas ${tag.icon}"></i>
+                </div>
+                <span class="tag-name">${tag.name}</span>
+                <i class="fas fa-check check-icon"></i>
+            </div>
+        `).join('');
+        
+        // Attach click handlers
+        tagList.querySelectorAll('.tag-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const name = item.getAttribute('data-tag');
+                const icon = item.getAttribute('data-icon');
+                
+                if (item.classList.contains('selected')) {
+                    showToast({ message: 'Tag já adicionada!', type: 'warning' });
+                } else {
+                    CustomFilters.addTag(name, icon);
+                    closeAddTagModal();
+                }
+            });
+        });
+    }
+    
+    renderTags();
+    
+    searchInput.value = '';
+    searchInput.addEventListener('input', (e) => {
+        renderTags(e.target.value);
+    });
+    
+    modal.classList.remove('hidden');
+    searchInput.focus();
+}
+
+function closeAddTagModal() {
+    document.getElementById('addTagModal').classList.add('hidden');
+}
+
+// Fechar modais ao clicar fora
+document.addEventListener('click', (e) => {
+    const countryModal = document.getElementById('addCountryModal');
+    const tagModal = document.getElementById('addTagModal');
+    
+    if (e.target === countryModal) {
+        closeAddCountryModal();
+    }
+    if (e.target === tagModal) {
+        closeAddTagModal();
+    }
+});
+
+// Fechar modais com ESC
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeAddCountryModal();
+        closeAddTagModal();
+    }
+});
 
 // ==================== INITIALIZATION ====================
 function init() {
