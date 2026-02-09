@@ -1457,6 +1457,7 @@ h1, h2, h3, h4, h5, h6 {
     }
 
     .radio-meta-item {
+        display: block;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -1469,6 +1470,9 @@ h1, h2, h3, h4, h5, h6 {
     .tag-card {
         padding: 0.5rem 1rem;
         font-size: 0.85rem;
+    }
+    .radio-tags {
+        display: none;
     }
 }
 

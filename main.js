@@ -135,8 +135,8 @@ const ALL_COUNTRIES = [
 ];
 
 const ALL_TAGS = [
-    { name: 'pop', icon: 'fa-music' }, { name: 'rock', icon: 'fa-guitar' }, { name: 'jazz', icon: 'fa-saxophone' },
-    { name: 'classical', icon: 'fa-violin' }, { name: 'electronic', icon: 'fa-bolt' }, { name: 'dance', icon: 'fa-child' },
+    { name: 'pop', icon: 'fa-music' }, { name: 'rock', icon: 'fa-guitar' }, { name: 'jazz', icon: 'fa-music' },
+    { name: 'classical', icon: 'fa-music' }, { name: 'electronic', icon: 'fa-bolt' }, { name: 'dance', icon: 'fa-child' },
     { name: 'hip hop', icon: 'fa-microphone' }, { name: 'rap', icon: 'fa-microphone' }, { name: 'r&b', icon: 'fa-heart' },
     { name: 'reggae', icon: 'fa-leaf' }, { name: 'blues', icon: 'fa-guitar' }, { name: 'country', icon: 'fa-horse' },
     { name: 'folk', icon: 'fa-guitar' }, { name: 'latin', icon: 'fa-fire' }, { name: 'salsa', icon: 'fa-fire' },
