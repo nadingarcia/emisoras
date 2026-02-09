@@ -6,10 +6,10 @@
  * 2. API: Stale-While-Revalidate (Instantâneo + Atualização em Background)
  * 3. Imagens: Cache First Híbrido (Suporta CORS e Opaque Responses para logotipos externos)
  * 
- * Version: 3.0.0-final
+ * Version: 3.0.0
  */
 
-const CACHE_VERSION = 'v3.0.0-final';
+const CACHE_VERSION = 'v3.0.0';
 const STATIC_CACHE = `radiowave-static-${CACHE_VERSION}`;
 const IMAGES_CACHE = `radiowave-images-${CACHE_VERSION}`;
 const API_CACHE = `radiowave-api-${CACHE_VERSION}`;
