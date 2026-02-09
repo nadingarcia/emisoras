@@ -1,5 +1,5 @@
 /**
- * RadioWave - Progressive Web App
+ * NEX07 INFINTY - Progressive Web App
  * 
  * Features:
  * - Pagination/Infinite scroll (20 stations per page)
@@ -1409,7 +1409,7 @@ function init() {
     // Welcome toast
     setTimeout(() => {
         showToast({ 
-            message: 'Bem-vindo ao RadioWave! 🎵', 
+            message: 'Bem-vindo ao NEX07 INFINTY! 🎵', 
             type: 'success',
             duration: 3000 
         });

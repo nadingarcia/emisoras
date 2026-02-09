@@ -1,8 +1,8 @@
-# RadioWave PWA - Documentação Completa
+# NEX07 INFINTY PWA - Documentação Completa
 
 ## 🎯 Visão Geral
 
-RadioWave é uma Progressive Web App (PWA) para descobrir e ouvir milhares de rádios do mundo inteiro. A aplicação oferece uma experiência rápida, offline-first, com recursos modernos de favoritos, notificações e descoberta de conteúdo.
+NEX07 INFINTY é uma Progressive Web App (PWA) para descobrir e ouvir milhares de rádios do mundo inteiro. A aplicação oferece uma experiência rápida, offline-first, com recursos modernos de favoritos, notificações e descoberta de conteúdo.
 
 ## ✨ Funcionalidades Implementadas
 
@@ -69,7 +69,7 @@ RadioWave é uma Progressive Web App (PWA) para descobrir e ouvir milhares de r�
 ## 📁 Estrutura de Arquivos
 
 ```
-radiowave/
+NEX07 INFINTY/
 ├── index.html          # HTML principal com SEO e PWA tags
 ├── styles.css          # Estilos completos com toasts, loading, etc.
 ├── main.js            # JavaScript com todas as funcionalidades
@@ -271,7 +271,7 @@ Sitemap: https://seu-dominio.example/sitemap.xml
 
 ### Teste 5: Instalação PWA
 1. No Chrome, clique no ícone de instalação na barra de endereço
-2. Ou vá em ⋮ → "Instalar RadioWave"
+2. Ou vá em ⋮ → "Instalar NEX07 INFINTY"
 3. Aplicação abre em janela standalone
 4. Funciona como app nativo
 

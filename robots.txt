@@ -1,4 +1,4 @@
-# robots.txt for RadioWave PWA
+# robots.txt for NEX07 INFINTY PWA
 
 User-agent: *
 Allow: /

@@ -304,6 +304,7 @@ h1, h2, h3, h4, h5, h6 {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     margin-bottom: 1rem;
+    padding: 0 0 1.5rem 0;
 }
 
 .filter-btn {
@@ -341,7 +342,6 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Country remove button */
 .country-remove-btn {
-    display: flex !important;
     position: absolute;
     top: 0;
     right: -6px;
@@ -467,7 +467,6 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Tag remove button */
 .tag-remove-btn {
-    display: flex !important;
     position: absolute;
     top: 0;
     right: -6px;
@@ -517,7 +516,7 @@ h1, h2, h3, h4, h5, h6 {
 /* ==================== LOADING SKELETON ==================== */
 .skeleton-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1.5rem;
     padding: 2rem;
 }
@@ -556,7 +555,7 @@ h1, h2, h3, h4, h5, h6 {
 /* ==================== RADIO GRID ==================== */
 .radio-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1.5rem;
     padding: 2rem;
     opacity: 0;
@@ -1235,4 +1234,32 @@ h1, h2, h3, h4, h5, h6 {
         padding: 0.5rem 1rem;
         font-size: 0.85rem;
     }
+}
+
+@media (min-width: 768px) {
+    ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--primary-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent-color);
+  border-radius: 12px;
+  border: 2px solid var(--primary-color);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-hover);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-color) var(--primary-color);
+}
+
 }
