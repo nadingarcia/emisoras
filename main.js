@@ -169,9 +169,9 @@ const CustomFilters = {
     DEFAULT_TAGS: [
         { name: 'pop', icon: 'fa-music' },
         { name: 'rock', icon: 'fa-guitar' },
-        { name: 'jazz', icon: 'fa-saxophone' },
+        { name: 'jazz', icon: 'fa-music' },
         { name: 'news', icon: 'fa-newspaper' },
-        { name: 'classical', icon: 'fa-violin' },
+        { name: 'classical', icon: 'fa-music' },
         { name: 'electronic', icon: 'fa-bolt' },
         { name: 'dance', icon: 'fa-child' },
         { name: '80s', icon: 'fa-history' },
