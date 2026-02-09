@@ -296,6 +296,19 @@ function updateUrlParams(filter, search = '', tag = '') {
     window.history.replaceState({}, '', newUrl);
 }
 
+// ==================== IMAGE UTILITIES ====================
+function getSecureArtwork(url) {
+    if (!url || typeof url !== 'string') return DEFAULT_ARTWORK;
+    const cleanUrl = url.trim();
+    
+    // Só aceita se começar EXATAMENTE com https://
+    if (cleanUrl.toLowerCase().startsWith('https://')) {
+        return cleanUrl;
+    }
+    
+    return DEFAULT_ARTWORK;
+}
+
 // ==================== FAVORITES SYSTEM ====================
 const Favorites = {
     STORAGE_KEY: 'radiowave_likes',
@@ -487,18 +500,17 @@ function clearActiveFilter() {
 }
 
 // ==================== API FUNCTIONS ====================
-// ==================== API FUNCTIONS ====================
 async function fetchStations(endpoint, resetPagination = true) {
     try {
         if (resetPagination) {
             state.page = 0;
             state.noMoreData = false;
-            // NÃO zeramos o allStations aqui ainda para evitar piscar a tela
-            // se der erro, mas vamos zerar se vier vazio.
         }
 
         showLoading();
         
+        // Dica: Adicionamos o parâmetro 'is_https=true' na URL da API quando possível,
+        // mas como usamos endpoints variados, o filtro client-side é mais garantido.
         const response = await fetch(`${API_BASE}${endpoint}`, {
             method: 'GET',
             headers: { 'User-Agent': 'NEX07-INFINITY/2.2' }
@@ -508,39 +520,48 @@ async function fetchStations(endpoint, resetPagination = true) {
         
         const data = await response.json();
         
-        // CODECS INVALIDOS (Video/WMA)
+        // CODECS PROIBIDOS (Vídeo ou incompatíveis)
         const INVALID_CODECS = ['H.264', 'MP4', 'WMA', 'WMV', 'FLV', 'MKV', 'VP8', 'VP9'];
 
         const validStations = data.filter(station => {
             const codec = (station.codec || '').toUpperCase();
             
-            // Validação básica
-            const isBasicValid = station.url_resolved && 
-                               station.url_resolved.trim() !== '' &&
-                               station.lastcheckok === 1 &&
-                               station.ssl_error === 0;
+            // 1. Verificação básica de dados
+            const hasUrl = station.url_resolved && station.url_resolved.trim() !== '';
+            const isOnline = station.lastcheckok === 1;
+            
+            // 2. FILTRO HTTPS RIGOROSO
+            // O navegador VAI bloquear HTTP em site HTTPS. 
+            // Então, removemos antes de mostrar para não frustrar o usuário.
+            const isHttps = station.url_resolved && station.url_resolved.startsWith('https://');
 
-            if (!isBasicValid) return false;
-
-            // Filtro de Codec
+            // 3. Filtro de Codec
             const isInvalidCodec = INVALID_CODECS.some(bad => codec.includes(bad));
-            return !isInvalidCodec;
+
+            // Retorna TRUE apenas se passar em tudo
+            return hasUrl && isOnline && isHttps && !isInvalidCodec;
         });
 
-        // CORREÇÃO DO BUG: Se não sobrou nada, exibe empty state AGORA
+        // LÓGICA DE EMPTY STATE (Se o filtro removeu tudo)
         if (validStations.length === 0) {
-            state.allStations = []; // Limpa o estado
-            updateStationCount(0); // Zera o contador visualmente
-            showEmptyState(); // Mostra o design bonito
-            return; // PARA A EXECUÇÃO AQUI
+            state.allStations = [];
+            updateStationCount(0);
+            
+            // Personaliza mensagem se o problema foi HTTPS
+            // Verifica se existiam estações no original, mas foram filtradas
+            if (data.length > 0) {
+                 showEmptyStateHTTPWarning(); // Nova função auxiliar abaixo
+            } else {
+                 showEmptyState();
+            }
+            return;
         }
 
-        // Se tem estações, continua normal
+        // Priorização e Carregamento
         const sortedStations = prioritizeStationsByCountry(validStations);
         state.allStations = sortedStations;
         state.noMoreData = false; 
 
-        // Esconde o empty state caso estivesse visível
         elements.emptyState.classList.add('hidden');
         elements.radioGrid.classList.remove('hidden');
 
@@ -548,24 +569,9 @@ async function fetchStations(endpoint, resetPagination = true) {
         
     } catch (error) {
         console.error('Error fetching stations:', error);
-        
-        // Em caso de erro de rede, zera tudo também
         state.allStations = [];
         updateStationCount(0);
-        
-        // Mostra mensagem de erro
-        elements.radioGrid.classList.add('hidden');
-        elements.emptyState.classList.remove('hidden');
-        elements.emptyState.innerHTML = `
-            <div class="empty-icon-wrapper" style="background: rgba(239, 68, 68, 0.1);">
-                <i class="fas fa-wifi" style="color: var(--error-color);"></i>
-            </div>
-            <h3>Erro de Conexão</h3>
-            <p>Não foi possível carregar as emissoras.</p>
-            <button onclick="location.reload()" class="btn-reset" style="background: var(--error-color); color: white;">
-                Tentar Novamente
-            </button>
-        `;
+        showError();
     } finally {
         hideLoading();
     }
@@ -718,6 +724,9 @@ function createStationCard(station) {
     const isPlaying = state.currentStation?.stationuuid === station.stationuuid;
     const isLiked = Favorites.isLiked(station.stationuuid);
     
+    // FILTRO DE IMAGEM HTTPS AQUI
+    const validImage = getSecureArtwork(station.favicon);
+    
     article.className = `radio-card ${isPlaying ? 'playing' : ''}`;
     article.setAttribute('data-station-id', station.stationuuid);
     article.setAttribute('role', 'button');
@@ -736,7 +745,7 @@ function createStationCard(station) {
         <div class="radio-image-wrapper">
             <img 
                 class="radio-image loading" 
-                data-src="${station.favicon || DEFAULT_ARTWORK}"
+                data-src="${validImage}"
                 alt="${escapeHtml(station.name)}"
                 loading="lazy"
             >
@@ -945,18 +954,21 @@ function toggleLike(station, likeBtn) {
 // ==================== MEDIA SESSION API ====================
 function updateMediaSession(station) {
     if ('mediaSession' in navigator) {
-        const artwork = station.favicon && station.favicon.trim() !== '' 
-            ? station.favicon 
-            : window.location.origin + '/icons/icon-512.png';
+        // FILTRO DE IMAGEM HTTPS AQUI TAMBÉM
+        // Se não tiver favicon seguro, usa o ícone do próprio app
+        const artworkUrl = getSecureArtwork(station.favicon);
+        const finalArtwork = artworkUrl === DEFAULT_ARTWORK 
+            ? window.location.origin + '/icons/icon-512.png' 
+            : artworkUrl;
         
         navigator.mediaSession.metadata = new MediaMetadata({
             title: station.name,
-            artist: station.country || 'RadioWave',
+            artist: station.country || 'NEX07 INFINITY',
             album: station.tags ? station.tags.split(',')[0] : 'Rádio Online',
             artwork: [
-                { src: artwork, sizes: '96x96', type: 'image/png' },
-                { src: artwork, sizes: '128x128', type: 'image/png' },
-                { src: artwork, sizes: '512x512', type: 'image/png' }
+                { src: finalArtwork, sizes: '96x96', type: 'image/png' },
+                { src: finalArtwork, sizes: '128x128', type: 'image/png' },
+                { src: finalArtwork, sizes: '512x512', type: 'image/png' }
             ]
         });
 
@@ -970,7 +982,6 @@ function updateMediaSession(station) {
             elements.audioPlayer.pause();
         });
 
-        // These don't work for live streams but we set them anyway
         navigator.mediaSession.setActionHandler('previoustrack', null);
         navigator.mediaSession.setActionHandler('nexttrack', null);
     }
@@ -1106,11 +1117,9 @@ function togglePlayPause() {
 function updatePlayerUI(station) {
     elements.playerTitle.textContent = station.name;
     
-    // Tratamento de legendas
     const subtitleParts = [];
     if (station.country) subtitleParts.push(station.country);
     
-    // Mostra tags no player se disponível (melhora a info)
     if (station.tags) {
         const mainTag = station.tags.split(',')[0];
         if(mainTag) subtitleParts.push(mainTag);
@@ -1123,22 +1132,18 @@ function updatePlayerUI(station) {
         <span>${subtitleParts.join(' • ') || 'Tocando agora'}</span>
     `;
 
-    // LÓGICA DE IMAGEM DO PLAYER CORRIGIDA
     const artwork = elements.playerArtwork;
     
-    // Define o handler de erro ANTES de definir o src para pegar erros imediatos
+    // FILTRO DE IMAGEM HTTPS AQUI TAMBÉM
+    const validImage = getSecureArtwork(station.favicon);
+    
     artwork.onerror = () => {
         artwork.src = DEFAULT_ARTWORK;
         artwork.classList.add('fallback');
     };
 
-    // Tenta carregar o favicon, se for vazio ou der erro, o onerror assume
-    if (station.favicon && station.favicon.trim() !== '') {
-        artwork.src = station.favicon;
-    } else {
-        artwork.src = DEFAULT_ARTWORK;
-    }
-
+    artwork.src = validImage;
+    
     updatePlayPauseButton();
 }
 
@@ -1237,6 +1242,26 @@ function showEmptyState() {
     `;
     
     // FORÇA a atualização do contador para 0
+    updateStationCount(0);
+}
+
+function showEmptyStateHTTPWarning() {
+    elements.radioGrid.classList.add('hidden');
+    elements.loadingSkeleton.classList.add('hidden');
+    elements.emptyState.classList.remove('hidden');
+
+    elements.emptyState.innerHTML = `
+        <div class="empty-icon-wrapper">
+            <i class="fas fa-lock"></i>
+        </div>
+        <h3>Filtro de Segurança Ativo</h3>
+        <p>Encontramos emissoras, mas elas não são compatíveis com HTTPS.</p>
+        <p class="sub-text">Para sua segurança, este app toca apenas conexões criptografadas. Muitas rádios antigas ainda usam conexões inseguras (HTTP).</p>
+        <button onclick="clearActiveFilter()" class="btn-reset">
+            <i class="fas fa-arrow-left"></i> Buscar Outras
+        </button>
+    `;
+    
     updateStationCount(0);
 }
 
