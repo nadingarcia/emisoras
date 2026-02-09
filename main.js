@@ -505,7 +505,6 @@ async function fetchStations(endpoint, resetPagination = true) {
         if (resetPagination) {
             state.page = 0;
             state.noMoreData = false;
-            // IMPORTANTE: Limpa o grid ANTES de fazer qualquer coisa
             elements.radioGrid.innerHTML = '';
         }
 
@@ -520,24 +519,19 @@ async function fetchStations(endpoint, resetPagination = true) {
         
         const data = await response.json();
         
-        // CODECS PROIBIDOS (Vídeo ou incompatíveis)
         const INVALID_CODECS = ['H.264', 'MP4', 'WMA', 'WMV', 'FLV', 'MKV', 'VP8', 'VP9'];
 
         const validStations = data.filter(station => {
             const codec = (station.codec || '').toUpperCase();
-            
             const hasUrl = station.url_resolved && station.url_resolved.trim() !== '';
             const isOnline = station.lastcheckok === 1;
             const isHttps = station.url_resolved && station.url_resolved.startsWith('https://');
             const isInvalidCodec = INVALID_CODECS.some(bad => codec.includes(bad));
-
             return hasUrl && isOnline && isHttps && !isInvalidCodec;
         });
 
-        // LÓGICA DE EMPTY STATE
         if (validStations.length === 0) {
             state.allStations = [];
-            // IMPORTANTE: Esconde o loading e limpa o grid
             hideLoading();
             elements.radioGrid.innerHTML = '';
             elements.radioGrid.classList.add('hidden');
@@ -548,22 +542,21 @@ async function fetchStations(endpoint, resetPagination = true) {
             } else {
                 showEmptyState();
             }
-            return;
+            return; // ✅ ADICIONE AQUI: return Promise.resolve();
         }
 
-        // Priorização e Carregamento
         const sortedStations = prioritizeStationsByCountry(validStations);
-        
-        // IMPORTANTE: Atualiza o state ANTES de renderizar
         state.allStations = sortedStations;
         state.noMoreData = false;
-        state.page = 0; // Garante que está em 0
+        state.page = 0;
 
         elements.emptyState.classList.add('hidden');
         elements.radioGrid.classList.remove('hidden');
 
-        // IMPORTANTE: Passa true para limpar (embora já limpamos acima, é segurança extra)
         loadNextPage(true);
+        
+        // ✅ ADICIONE ESTA LINHA NO FINAL (antes do } catch):
+        return Promise.resolve();
         
     } catch (error) {
         console.error('Error fetching stations:', error);
@@ -572,6 +565,7 @@ async function fetchStations(endpoint, resetPagination = true) {
         hideLoading();
         updateStationCount(0);
         showError();
+        return Promise.reject(error); // ✅ ADICIONE AQUI TAMBÉM
     } finally {
         hideLoading();
     }
@@ -618,13 +612,22 @@ async function searchStations(query) {
         return;
     }
     
+    // ✅ CORREÇÃO: Define estado ANTES
+    state.searchQuery = query;
+    state.currentFilter = 'search';
+    state.activeFilterType = 'search';
+    
     const endpoint = `/stations/byname/${encodeURIComponent(query)}`;
     await fetchStations(endpoint);
+    
     updateUrlParams(state.currentFilter, query, state.currentTag);
     showActiveFilter('search', query);
+    
+    // ✅ CORREÇÃO: Atualiza visual DEPOIS
+    updateAllVisualStates();
 }
 
-function loadStationsByFilter(filter) {
+async function loadStationsByFilter(filter) {
     let endpoint;
     
     // Reseta estados conflitantes
@@ -641,7 +644,6 @@ function loadStationsByFilter(filter) {
         case 'favorites':
             showFavorites();
             updateUrlParams('favorites');
-            // Atualiza visual mesmo sendo favoritos
             state.currentFilter = 'favorites';
             updateAllVisualStates();
             return;
@@ -649,18 +651,15 @@ function loadStationsByFilter(filter) {
             endpoint = `/stations/bycountrycodeexact/${filter}`;
             state.currentCountry = filter;
             state.activeFilterType = 'country';
-            // Busca o nome do país para exibir corretamente
-            const country = CustomFilters.getCountries().find(c => c.code === filter);
-            if (country) {
-                // A atualização visual cuidará do banner
-            }
     }
     
     state.currentFilter = filter;
-    fetchStations(endpoint);
     updateUrlParams(filter);
     
-    // MÁGICA AQUI: Sincroniza Sidebar e Menu Principal
+    // ✅ CHAVE: AWAIT aqui para esperar terminar
+    await fetchStations(endpoint);
+    
+    // ✅ Agora sim atualiza o visual (dados já carregados)
     updateAllVisualStates();
 }
 
@@ -1363,7 +1362,7 @@ function attachTagListeners() {
 
 window.handleTagClick = async (tagName, element) => {
     // Define o estado
-    state.currentFilter = 'tag'; // Marca tecnicamente como filtro de tag
+    state.currentFilter = 'tag';
     state.currentTag = tagName;
     state.currentCountry = null;
     state.activeFilterType = 'tag';
@@ -1372,13 +1371,16 @@ window.handleTagClick = async (tagName, element) => {
     elements.searchInput.value = '';
     state.searchQuery = '';
     
+    // ✅ CORREÇÃO: Atualiza visual ANTES
+    updateAllVisualStates();
+    
     // Fetch stations by tag
     const endpoint = `/stations/bytag/${encodeURIComponent(tagName)}`;
     await fetchStations(endpoint);
     
     updateUrlParams('tag', '', tagName);
     
-    // MÁGICA AQUI: Sincroniza tudo
+    // ✅ CORREÇÃO: Atualiza visual DEPOIS também
     updateAllVisualStates();
 };
 
@@ -1442,14 +1444,14 @@ function renderSidebar() {
         
         // Listeners dos Países
         sidebarCountries.querySelectorAll('.sidebar-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => { // ✅ ADICIONE async
                 const code = btn.getAttribute('data-country');
                 
                 // Fecha o sidebar
                 if (state.sidebarOpen) toggleSidebar();
                 
-                // Carrega o filtro (Isso vai chamar o updateAllVisualStates internamente)
-                loadStationsByFilter(code);
+                // ✅ ADICIONE await:
+                await loadStationsByFilter(code);
             });
         });
     }
@@ -1467,18 +1469,17 @@ function renderSidebar() {
             </button>
         `).join('');
         
-        // Listeners das Tags
-        sidebarTags.querySelectorAll('.sidebar-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tagName = btn.getAttribute('data-tag');
-                
-                // Fecha o sidebar
-                if (state.sidebarOpen) toggleSidebar();
-                
-                // Carrega a tag (Isso vai chamar o updateAllVisualStates internamente)
-                handleTagClick(tagName, null);
+            sidebarTags.querySelectorAll('.sidebar-btn').forEach(btn => {
+                btn.addEventListener('click', async () => { // ✅ ADICIONE async
+                    const tagName = btn.getAttribute('data-tag');
+                    
+                    // Fecha o sidebar
+                    if (state.sidebarOpen) toggleSidebar();
+                    
+                    // ✅ ADICIONE await:
+                    await handleTagClick(tagName, null);
+                });
             });
-        });
     }
 
     // ==========================================
@@ -1533,11 +1534,9 @@ function updateSidebarActiveFilters() {
 }
 
 function attachFilterListeners() {
-    // Filter button clicks
     const filterBtns = elements.filterButtons.querySelectorAll('.filter-btn:not(.add-country-btn)');
     filterBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            // Ignore if clicking remove button
+        btn.addEventListener('click', async (e) => { // ✅ ADICIONE async AQUI
             if (e.target.closest('.country-remove-btn')) return;
             
             const filter = btn.getAttribute('data-filter');
@@ -1552,7 +1551,9 @@ function attachFilterListeners() {
 
             // Update state and load
             state.currentFilter = filter;
-            loadStationsByFilter(filter);
+            
+            // ✅ ADICIONE await AQUI:
+            await loadStationsByFilter(filter);
         });
     });
     
