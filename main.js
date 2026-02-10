@@ -137,7 +137,7 @@ const ALL_COUNTRIES = [
 
 const ALL_TAGS = [
     { name: 'pop', icon: 'fa-music' }, { name: 'rock', icon: 'fa-guitar' }, { name: 'jazz', icon: 'fa-music' },
-    { name: 'classical', icon: 'fa-music' }, { name: 'electronic', icon: 'fa-bolt' }, { name: 'dance', icon: 'fa-child' },
+    { name: 'classical', icon: 'fa-music' }, { name: 'electronic', icon: 'fa-bolt' }, { name: 'dance', icon: 'fa-headphones' },
     { name: 'hip hop', icon: 'fa-microphone' }, { name: 'rap', icon: 'fa-microphone' }, { name: 'r&b', icon: 'fa-heart' },
     { name: 'reggae', icon: 'fa-leaf' }, { name: 'blues', icon: 'fa-guitar' }, { name: 'country', icon: 'fa-horse' },
     { name: 'folk', icon: 'fa-guitar' }, { name: 'latin', icon: 'fa-fire' }, { name: 'salsa', icon: 'fa-fire' },
@@ -157,7 +157,7 @@ const ALL_TAGS = [
     { name: 'bollywood', icon: 'fa-film' }, { name: 'k-pop', icon: 'fa-star' }, { name: 'j-pop', icon: 'fa-music' },
     { name: 'kids', icon: 'fa-child' }, { name: 'christmas', icon: 'fa-gifts' }, { name: 'halloween', icon: 'fa-ghost' },
     { name: 'romantic', icon: 'fa-heart' }, { name: 'love songs', icon: 'fa-heart-pulse' },
-    { name: 'instrumental', icon: 'fa-music' }, { name: 'acoustic', icon: 'fa-guitar' },
+    { name: 'instrumental', icon: 'fa-music' }, { name: 'acoustic', icon: 'fa-guitar' }, { name: 'sleep', icon: 'fa-moon' },
     { name: 'live', icon: 'fa-broadcast-tower' }, { name: 'dj', icon: 'fa-headphones' },
     { name: 'top 40', icon: 'fa-chart-line' }, { name: 'hits', icon: 'fa-fire' }, { name: 'charts', icon: 'fa-trophy' }
 ];
@@ -173,9 +173,9 @@ const CustomFilters = {
         { name: 'rock', icon: 'fa-guitar' },
         { name: 'jazz', icon: 'fa-music' },
         { name: 'news', icon: 'fa-newspaper' },
-        { name: 'classical', icon: 'fa-music' },
+        { name: 'sleep', icon: 'fa-moon' },
         { name: 'electronic', icon: 'fa-bolt' },
-        { name: 'dance', icon: 'fa-child' },
+        { name: 'dance', icon: 'fa-headphones' },
         { name: '80s', icon: 'fa-history' },
         { name: 'talk', icon: 'fa-microphone' }
     ],
